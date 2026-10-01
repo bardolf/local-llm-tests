@@ -112,3 +112,5 @@
 - PyTorch 2.14.1+rocm7.2 na RX 6600 funguje (HSA_OVERRIDE_GFX_VERSION=10.3.0, /dev/kfd 0666).
   Nutné torchvision z rocm indexu (z PyPI → „torchvision::nms does not exist“).
   Velké SR modely: 8–19 s/obálka, VRAM ≤ 1.6 GB. DRCT-L jediný napsal drobné „čte“ správně.
+- Oprava závěru (Milan si všiml): na „Hamerský“ je nejlepší **ATD**, DRCT-L tam dělá tmavé fleky.
+  Celkově na drobné písmo doporučeno ATD (4xNomosWebPhoto_atd), ne DRCT-L.

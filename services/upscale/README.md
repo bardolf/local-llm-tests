@@ -74,22 +74,25 @@ RX 6600 = gfx1032, ROCm ji oficiálně neumí → `HSA_OVERRIDE_GFX_VERSION=10.3
 
 ```bash
 engines/torch-sr/bin/python services/upscale/upscale_torch.py \
-  -m models/upscale/4xRealWebPhoto_v4_drct-l.pth obalka.jpg obalka_4x.png
+  -m models/upscale/4xNomosWebPhoto_atd.safetensors obalka.jpg obalka_4x.png
 ```
 
-| model | arch. | param | 300×300 | 354×550 | VRAM | drobné písmo „čte Vojtěch“ |
-|---|---|---|---|---|---|---|
-| 4x_NMKD-Siax_200k (ncnn, pro srovnání) | ESRGAN | 17M | 2.4 s | 3.6 s | – | „čto“, čisté |
-| 4xBHI_dat2_real | DAT2 | 11M | 7.9 s | 9.2 s | 0.8 GB | „čto“, zubaté háčky |
-| 4xNomosWebPhoto_atd | ATD | 20M | 11.5 s | 17.3 s | 1.1 GB | „čto“, nejčistší tvary |
-| 4xNomos8kSCHAT-L | HAT-L | 41M | 10.7 s | 18.6 s | 1.6 GB | „čto“, měkké |
-| **4xRealWebPhoto_v4_drct-l** | DRCT-L | 28M | 11.0 s | 18.3 s | 1.1 GB | **„čte“ správně** (jediný), trochu zrnité |
+| model | arch. | param | 300×300 | 354×550 | VRAM | „čte Vojtěch“ | „Hamerský“ |
+|---|---|---|---|---|---|---|---|
+| 4x_NMKD-Siax_200k (ncnn, pro srovnání) | ESRGAN | 17M | 2.4 s | 3.6 s | – | „čto“, čisté | čitelné, „e“ ≈ „o“ |
+| 4xBHI_dat2_real | DAT2 | 11M | 7.9 s | 9.2 s | 0.8 GB | „čto“, zubaté háčky | zubaté |
+| **4xNomosWebPhoto_atd** | ATD | 20M | 11.5 s | 17.3 s | 1.1 GB | „čto“, nejčistší tvary | **nejlepší** – čisté, rovnoměrné |
+| 4xNomos8kSCHAT-L | HAT-L | 41M | 10.7 s | 18.6 s | 1.6 GB | „čto“, měkké | tmavé skvrny v „m“, „e“ |
+| 4xRealWebPhoto_v4_drct-l | DRCT-L | 28M | 11.0 s | 18.3 s | 1.1 GB | „čte“ správně (jediný) | nejhorší – fleky v „a“, „m“, „e“ |
 
 (Dlaždice 192 px, fp32. První běh vůbec ~24 s – kompilace kernelů, pak cache.)
 
 Rytina (Král Krysa): všechny velké modely zachovají tiskový rastr z teček jako Siax; DRCT-L
 nejostřejší, HAT-L nejměkčí. Žádný nevymýšlí síťovinu jako realesrgan-x4plus.
 
-Závěr: velké modely jsou o kousek lepší, hlavně **DRCT-L na drobné písmo**; 8 GB VRAM je víc než dost
-(špička 1.6 GB). Cena: ~5× pomalejší než Siax (11–18 s vs. 2–4 s na obálku) – pro stovky obálek
-pořád v pohodě. Pro dávku: Siax rychle na všechno, DRCT-L na obálky s drobným textem.
+Závěr: velké modely jsou o kousek lepší; na drobné písmo celkově nejlepší **ATD** (nejčistší tvary písmen,
+„Hamerský“ bez artefaktů). DRCT-L sice jako jediný trefil „čte“, ale jinde dělá v písmenech tmavé fleky
+(původně jsem ho na základě samotného „čte“ doporučil – opraveno po porovnání „Hamerský“, výřezy
+`1-zoom-cte.png` a `1-zoom-hamersky.png`). 8 GB VRAM je víc než dost (špička 1.6 GB). Cena: ~5× pomalejší
+než Siax (11–18 s vs. 2–4 s na obálku) – pro stovky obálek pořád v pohodě.
+Pro dávku: Siax rychle na všechno, **ATD** na obálky s drobným textem.

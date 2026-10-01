@@ -38,7 +38,7 @@ Odhad: 6h audiokniha ≈ 50 min (s VAD) / ≈ 36 min (bez VAD).
 200×200 → 800×800: 1.5 s (vč. načtení). S `OMP_WAIT_POLICY=passive` (jinak 20 s CPU zbytečně).
 
 Modely (ncnn/Vulkan, 1–4 s/obálka): nový výchozí 4x_NMKD-Siax_200k. Velké transformery přes PyTorch ROCm
-(DRCT-L/HAT-L/DAT2/ATD): 8–19 s/obálka, VRAM ≤ 1.6 GB, DRCT-L nejlepší na drobné písmo.
+(DRCT-L/HAT-L/DAT2/ATD): 8–19 s/obálka, VRAM ≤ 1.6 GB, na drobné písmo celkově nejlepší ATD (DRCT-L trefí „čte“, ale jinde dělá fleky).
 Detail: services/upscale/README.md.
 
 ## VAD (Silero, CPU)
