@@ -7,12 +7,14 @@ Malé lokální modely jako podpora pro audioknihovnu: přepis řeči, úklid me
 embeddingy, zvětšení obálek, dělení na kapitoly, otisky nahrávek. Všechno přes **Vulkan**
 (Mesa RADV), ROCm není potřeba.
 
-Tenhle adresář = projekt **`~/projects/llm`** na desktopu. Pracovní kopie je git klon
-`~/projects/audiobooksprocessing` a **`~/projects/llm` je symlink na jeho `desktop/`** – cestu
-`~/projects/llm` používá systemd služba, config orchestrátoru, příkazy ze serveru i venv
-`engines/torch-sr` (absolutní cesty), proto symlink nerušit. Mimo git (`.gitignore`) jsou buildy
-`engines/` (~17 GB vč. PyTorch ROCm), modely `models/` (~17 GB) a výstupy `data/`; postavit znovu:
-`docs/SETUP.md`. Před prací `git pull` (do repa commituje i server session).
+Na desktopu je tohle repo naklonované v **`~/projects/audiobooksprocessing`** a projekt běží přímo
+z jeho `desktop/` (služba, config, příkazy ze serveru – vše s cestou `~/projects/audiobooksprocessing/desktop`).
+Mimo git (`.gitignore`) jsou buildy `engines/` (~17 GB vč. PyTorch ROCm), modely `models/` (~17 GB)
+a výstupy `data/`; postavit znovu: `docs/SETUP.md`. Před prací `git pull` (do repa commituje i server session).
+
+Dřív se projekt jmenoval `~/projects/llm`; to je teď jen dočasný symlink pro zpětnou kompatibilitu a
+počítá se s jeho smazáním. Venv `engines/torch-sr` má ve skriptech (`bin/pip`…) starou cestu → volat
+přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 
 ## Co je k dispozici
 
@@ -32,7 +34,7 @@ Serverové služby (whisper, chat, embed) spouští **orchestrátor llama-swap**
 zatím zavřený – výsledky se nosí jako soubory (viz níže).
 
 ```bash
-cd ~/projects/llm
+cd ~/projects/audiobooksprocessing/desktop
 bin/ai status                      # co běží, kolik VRAM
 bin/ai chat "Kdo napsal Babičku?"  # chat (gemma4b)
 bin/ai stt kniha.mp3 srt           # přepis
@@ -54,7 +56,7 @@ uid/gid milan. Úlohy z ní **jen čtou**.
 první/poslední řeč (přeskočí hudbu), přepíše ~60 s začátku a konce (jazyk auto, nápověda „Autor, Název“),
 přidá ID3 tagy 1. souboru (`probe_first`), odfiltruje halucinace, označí `suspect`.
 
-- Výstup na desktopu `~/projects/llm/data/intro-outro.jsonl` (průběžně) a `intro-outro.json` (na konci běhu
+- Výstup na desktopu `desktop/data/intro-outro.jsonl` (průběžně) a `intro-outro.json` (na konci běhu
   / po Ctrl+C). Klíč `book` = cesta relativně ke kořeni knihovny. Formát: `jobs/intro-outro/README.md`.
 - Navazuje (hotové přeskočí, chybné zkusí znovu). ~5 s/kniha ve 2 vláknech; 2254 knih ≈ 3–4 h.
   **Běh celé knihovny spuštěn 2026-10-01.**
@@ -66,7 +68,7 @@ Hromadný běh pokrývá jen knihy, které už v knihovně jsou. Pro nové knihy
 1. zdroje importu dávat na NAS do `/media/disk3/audio/_import/` (mimo `spoken` → ABS je nevidí; desktop:
    `/media/disks/disk3/audio/_import/`),
 2. spouštět ze serveru (volba `--library` už existuje):
-   `ssh milan@192.168.1.10 'cd ~/projects/llm && jobs/intro-outro/transcribe_intro_outro.py --library /media/disks/disk3/audio/_import "Kniha" --out data/import.jsonl'`
+   `ssh milan@192.168.1.10 'cd ~/projects/audiobooksprocessing/desktop && jobs/intro-outro/transcribe_intro_outro.py --library /media/disks/disk3/audio/_import "Kniha" --out data/import.jsonl'`
    a výsledek stáhnout `scp` (`data/import.json`).
 
 Nouzově (desktop nedostupný): `server/import/clips.py` + lokální faster-whisper na CPU (docs/IMPORT_POSTUP.md §4).

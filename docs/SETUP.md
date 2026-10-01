@@ -23,7 +23,8 @@ Kontrola GPU: `vulkaninfo --summary` → musí být `AMD Radeon RX 6600 XT (RADV
 cd engines
 git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
 cd llama.cpp
-cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=ON -DLLAMA_BUILD_TESTS=OFF
+cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=ON -DLLAMA_BUILD_TESTS=OFF \
+  -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON   # RUNPATH=$ORIGIN → binárky fungují i po přesunu adresáře
 cmake --build build -j 20          # ~4 min
 ./build/bin/llama-server --list-devices   # → Vulkan0: AMD Radeon RX 6600 XT
 ```
@@ -35,7 +36,7 @@ cd engines
 git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git
 cd whisper.cpp
 cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=ON \
-  -DWHISPER_BUILD_TESTS=OFF -DWHISPER_FFMPEG=OFF
+  -DWHISPER_BUILD_TESTS=OFF -DWHISPER_FFMPEG=OFF -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON
 cmake --build build -j 20
 ```
 
@@ -66,8 +67,8 @@ Velké transformerové modely (DRCT-L, HAT-L, DAT2, ATD) přes PyTorch + ROCm (v
 
 ```bash
 python3 -m venv engines/torch-sr
-engines/torch-sr/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm7.2
-engines/torch-sr/bin/pip install spandrel pillow numpy
+engines/torch-sr/bin/python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm7.2
+engines/torch-sr/bin/python -m pip install spandrel pillow numpy
 # pozor: spandrel jinak natáhne torchvision z PyPI (neROCm) → „operator torchvision::nms does not exist“
 B=https://github.com/Phhofm/models/releases/download
 cd models/upscale

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Nainstaluje a spustí orchestrátor jako systemd --user službu.
 set -euo pipefail
-HERE="$(cd "$(dirname "$0")" && pwd)"
+HERE="$(cd "$(dirname "$0")" && pwd -P)"   # reálná cesta, ne přes symlink
 mkdir -p ~/.config/systemd/user
 ln -sf "$HERE/llama-swap.service" ~/.config/systemd/user/llama-swap.service
 systemctl --user daemon-reload

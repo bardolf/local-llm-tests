@@ -19,7 +19,7 @@ Přepis běží na **Radeonu** (whisper-server přes Vulkan, orchestrátor ho sp
 ## Použití (celá knihovna)
 
 ```bash
-cd ~/projects/llm
+cd ~/projects/audiobooksprocessing/desktop
 jobs/intro-outro/transcribe_intro_outro.py              # spustit / navázat
 #   Ctrl+C → dokončí rozpracované knihy, zapíše data/intro-outro.json a skončí
 jobs/intro-outro/transcribe_intro_outro.py              # znovu = pokračuje, kde skončil

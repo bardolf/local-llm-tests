@@ -5,8 +5,8 @@ Description=llama-swap – orchestrátor lokálních AI modelů (Vulkan, RX 6600
 After=network-online.target
 
 [Service]
-ExecStart=%h/projects/llm/engines/llama-swap/llama-swap \
-  -config %h/projects/llm/orchestrator/config.yaml \
+ExecStart=%h/projects/audiobooksprocessing/desktop/engines/llama-swap/llama-swap \
+  -config %h/projects/audiobooksprocessing/desktop/orchestrator/config.yaml \
   -listen 0.0.0.0:8100 \
   -watch-config
 Restart=on-failure

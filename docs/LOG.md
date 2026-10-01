@@ -118,3 +118,10 @@
   symlink na `…/desktop`. `engines/`, `models/`, `data/` přesunuty do `desktop/` (mv, okamžité) a
   přidány do `.gitignore`. Orchestrátor restartován (unit je symlink přes ~/projects/llm), smoke 7/7 OK,
   torch-sr venv OK (má absolutní cesty přes ~/projects/llm → symlink nerušit). Konec rsync kopírování.
+- **Příprava na zrušení symlinku ~/projects/llm:** llama.cpp a whisper.cpp přestavěny s
+  `-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON` (RUNPATH `$ORIGIN`, dřív absolutní cesta přes symlink; ~40 s
+  na engine díky ccache, `CCACHE_BASEDIR`). systemd unit, config.yaml, install.sh (`pwd -P`), sync.sh,
+  README, IMPORT_POSTUP.md → cesta `~/projects/audiobooksprocessing/desktop`. Paměť Claude Code
+  zkopírována do `~/.claude/projects/-home-milan-projects-audiobooksprocessing/memory/`.
+  Ověřeno s odsunutým symlinkem: smoke 7/7, torch-sr (GPU), intro-outro export OK. Symlink zatím vrácen;
+  smazat lze `rm ~/projects/llm` (venv torch-sr: volat `bin/python -m pip`, ne `bin/pip`).
