@@ -95,3 +95,20 @@
   nejvěrnější **4x_NMKD-Siax_200k** (+ remacri-4x, 4xLSDIRplusC) → nový výchozí v upscale.sh.
   ~10px písmo neobnoví žádný model (GAN dokresluje „čte“ → „čto“).
 - ffmpeg 8: `drawtext=fontfile=…` hlásí „Either text… must be provided“; bez fontfile (fontconfig) OK.
+- **Git:** projekt je v repu `git@github.com:bardolf/audiobooksprocessing.git` (soukromé) ve složce
+  `desktop/` (commit b6bf22c). Klon na desktopu: `~/projects/audiobooksprocessing`. Pracovní kopie
+  zatím zůstává `~/projects/llm` (běží v ní přepis knihovny) → změny se kopírují rsyncem do klonu
+  (bez engines/, models/, data/). Snapshot intro-outro od server session přesunut do
+  `desktop/jobs/intro-outro/`, `desktop/sync.sh` stahuje už jen výsledky. README sloučeno.
+  TODO po doběhnutí běhu: sjednotit (~/projects/llm → symlink na klon/desktop).
+- intro-outro běh celé knihovny: 9 chyb. 7 opraveno ve skriptu (MP3 bez hlavičky délky → -sseof
+  prázdný → záložní plné dekódování; .mp3 s RIFF uvnitř → vynucený formát). 2 jsou vady knihovny:
+  Banková (šifrované/DRM soubory), Ivan Binar (8.3 mangled jméno přes CIFS). Detail jobs/intro-outro/README.md.
+- Upscale velkými modely (HAT-L, DAT2, DRCT-L, ATD přes PyTorch ROCm) připraveno
+  (`services/upscale/upscale_torch.py`, venv `engines/torch-sr`), **čeká na doběhnutí přepisu** (GPU).
+- intro-outro dokončeno 21:47: 2254 knih, 12 chyb, 306 suspect. Z 12 chyb opravuje nová verze 9;
+  3 jsou nečitelné (Banková – šifrované; Ivan Binar a Dvořáčková – Kyselé jablko – 8.3 mangled jména přes CIFS).
+  Export JSON vynechával 2 knihy kvůli `splitlines()` a U+2028 v textu → opraveno, JSON má 2254.
+- PyTorch 2.14.1+rocm7.2 na RX 6600 funguje (HSA_OVERRIDE_GFX_VERSION=10.3.0, /dev/kfd 0666).
+  Nutné torchvision z rocm indexu (z PyPI → „torchvision::nms does not exist“).
+  Velké SR modely: 8–19 s/obálka, VRAM ≤ 1.6 GB. DRCT-L jediný napsal drobné „čte“ správně.

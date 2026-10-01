@@ -62,6 +62,21 @@ for m in 4xNomos8kSC 4xLSDIRplusC 4x_NMKD-Siax_200k; do
   for e in param bin; do curl -sfL -o models/$m.$e https://raw.githubusercontent.com/upscayl/custom-models/main/models/$m.$e; done; done
 ```
 
+Velké transformerové modely (DRCT-L, HAT-L, DAT2, ATD) přes PyTorch + ROCm (venv ~15 GB):
+
+```bash
+python3 -m venv engines/torch-sr
+engines/torch-sr/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm7.2
+engines/torch-sr/bin/pip install spandrel pillow numpy
+# pozor: spandrel jinak natáhne torchvision z PyPI (neROCm) → „operator torchvision::nms does not exist“
+B=https://github.com/Phhofm/models/releases/download
+cd models/upscale
+curl -LO $B/4xRealWebPhoto_v4_drct-l/4xRealWebPhoto_v4_drct-l.pth
+curl -LO $B/4xNomos8kSCHAT/4xNomos8kSCHAT-L.safetensors
+curl -LO $B/4xBHI_dat2_real/4xBHI_dat2_real.safetensors
+curl -LO $B/4xNomosWebPhoto_atd/4xNomosWebPhoto_atd.safetensors
+```
+
 ## 5. llama-swap (orchestrátor)
 
 ```bash

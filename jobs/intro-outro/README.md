@@ -92,3 +92,31 @@ odhadem 3–4 tisíce knih) ≈ 5–7 hodin.
   Opravu nechat na AI kroku (může mít seznam známých vydavatelů a vypravěčů).
 - ffmpeg u MP3 při skoku na konec vypíše „Header missing“ – neškodné.
 - Suspect knihy půjde později přepsat s delším oknem (`--seconds 120`) do zvláštního souboru.
+
+## Chyby z prvního běhu celé knihovny (2026-10-01) a opravy
+
+Konečný stav běhu: 2254 knih, **12 s chybou** (9 v průběhu + Tisíc a jedna noc, Kyselé jablko, Saturnin),
+306 označeno `suspect`. Opraveno ve skriptu (projeví se dalším spuštěním – knihy s chybou se zkusí znovu):
+
+- **5× konec knihy**: u MP3 bez správné hlavičky délky vrací `ffmpeg -sseof -180` prázdný výstup
+  (pak padal VAD). Nově záložně: dekódovat celý soubor a konec vyříznout z WAV (`"extract": "full"`).
+  Ferrante – Dny opuštění, Androniková – Nebe nemá dno, Arbes – Štědrý den bratří Mánesů,
+  Curwood – Vlčák Kazan, Twain – Tom Sawyer a Huckleberry Finn.
+- **2× zvláštní kontejner**: `.mp3` = ID3 + RIFF hlavička → ffmpeg pozná špatný formát; nově
+  záložně vynutí formát podle přípony (`"extract": "start-f"/"sseof-f"`).
+  Spejbl a Hurvínek – První pomoc 1 a 2, Šimek a Grossmann – Pupák, Jirotka – Saturnin,
+  Různí autoři – Příběhy tisíce a jedné noci.
+- Export do JSON tiše vynechal 2 knihy (Foglar – Hoši od Bobří řeky v2, Kopta – Hlídač č. 47): `str.splitlines()`
+  dělí i podle U+2028 apod., které jsou v textu → řádek JSONL se rozpadl. Opraveno (dělí se jen podle `\n`);
+  bez opravy by se ty knihy navíc pokaždé přepisovaly znovu.
+- Chyby nově obsahují poslední řádky stderr (ffmpeg/VAD), ne jen „exit status“.
+
+**Vadné soubory v knihovně – opravit na serveru:**
+
+| kniha | problém |
+|---|---|
+| `Markéta Banková/Straka v říši entropie/` (`01-AudioTrek 01.mp3`…) | za ID3 tagem náhodná data → zřejmě **šifrované (DRM, Audiotéka?)**, nepřehratelné |
+| `Vlasta Dvořáčková/Kyselé jablko/J8W9EG~6.M4A` | **8.3 mangled jméno** (jako Binar níže) |
+| `Ivan Binar/K1NOLP~K/KDP9XX~Y.M4B` | **8.3 mangled jméno** (Samba) – skutečný název adresáře/souboru na NASu obsahuje znaky, které CIFS nepřenese (`:` `?` `"` …) → přes share nejde otevřít; přejmenovat na serveru |
+
+Další zjištění: v knihách je `extract` v záznamu – kolik souborů potřebovalo záložní cestu.

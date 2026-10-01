@@ -90,8 +90,17 @@ def ffprobe(path: Path) -> dict:
     return {"duration": round(float(fmt.get("duration", 0) or 0), 1), "tags": tags}
 
 
+def run(cmd: list[str]) -> str:
+    """subprocess s čitelnou chybou (poslední řádky stderr), ne jen „exit status 1“."""
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    if p.returncode != 0:
+        tail = " | ".join((p.stderr or p.stdout).strip().splitlines()[-2:])
+        raise RuntimeError(f"{Path(cmd[0]).name} selhal ({p.returncode}): {tail}")
+    return p.stdout
+
+
 def to_wav(src: Path, dst: Path, *, start: float | None = None, sseof: float | None = None,
-           dur: float | None = None) -> None:
+           dur: float | None = None, fmt: str | None = None) -> None:
     cmd = ["ffmpeg", "-loglevel", "error", "-nostdin", "-y"]
     if sseof is not None:
         cmd += ["-sseof", f"-{sseof}"]
@@ -99,8 +108,53 @@ def to_wav(src: Path, dst: Path, *, start: float | None = None, sseof: float | N
         cmd += ["-ss", f"{start}"]
     if dur is not None:
         cmd += ["-t", f"{dur}"]
+    if fmt:
+        cmd += ["-f", fmt]
     cmd += ["-i", str(src), "-vn", "-ac", "1", "-ar", "16000", str(dst)]
-    subprocess.run(cmd, check=True)
+    run(cmd)
+
+
+def extract(f: Path, dst: Path, which: str, scan: float, tmp: Path) -> str:
+    """Vystřihne úvodních/závěrečných `scan` s do 16 kHz WAV. Vrací použitou metodu.
+
+    Záložní cesty (zjištěno na knihovně):
+    - některá MP3 bez správné hlavičky délky: `-sseof` vrátí prázdný soubor → seek podle ffprobe,
+      a když ani to, dekódovat celý soubor a konec vyříznout z WAV (tam je seek spolehlivý),
+    - soubory s nečekanou strukturou (např. .mp3 = ID3 + RIFF hlavička): ffmpeg pozná špatný
+      kontejner → vynutit formát podle přípony.
+    """
+    fmt = {".mp3": "mp3", ".m4a": "mp4", ".m4b": "mp4", ".ogg": "ogg", ".flac": "flac"}.get(f.suffix.lower())
+    tries: list[tuple[str, dict]] = []
+    if which == "start":
+        tries = [("start", {"dur": scan}), ("start-f", {"dur": scan, "fmt": fmt})]
+    else:
+        tries = [("sseof", {"sseof": scan}), ("sseof-f", {"sseof": scan, "fmt": fmt})]
+    errors = []
+    for name, kw in tries:
+        if kw.get("fmt", "x") is None:
+            continue
+        try:
+            to_wav(f, dst, **kw)
+            if wav_duration(dst) >= 1:
+                return name
+            errors.append(f"{name}: prázdný výstup")
+        except RuntimeError as e:
+            errors.append(f"{name}: {e}")
+    if which == "end":
+        full = tmp / "full.wav"
+        for name, kw in (("full", {}), ("full-f", {"fmt": fmt})):
+            if kw.get("fmt", "x") is None:
+                continue
+            try:
+                to_wav(f, full, **kw)
+                if wav_duration(full) >= 1:
+                    to_wav(full, dst, sseof=scan)
+                    full.unlink()
+                    return name
+                errors.append(f"{name}: prázdný výstup")
+            except RuntimeError as e:
+                errors.append(f"{name}: {e}")
+    raise RuntimeError("nelze dekódovat – " + "; ".join(errors))
 
 
 def wav_duration(path: Path) -> float:
@@ -108,8 +162,7 @@ def wav_duration(path: Path) -> float:
 
 
 def speech(path: Path) -> list[tuple[float, float]]:
-    out = subprocess.run([str(VAD_BIN), "-vm", str(VAD_MODEL), "-f", str(path), "-t", "8", "--no-prints"],
-                         capture_output=True, text=True, check=True).stdout
+    out = run([str(VAD_BIN), "-vm", str(VAD_MODEL), "-f", str(path), "-t", "8", "--no-prints"])
     segs = [(float(a) / 100, float(b) / 100) for a, b in SEG_RE.findall(out)]
     return [s for s in segs if s[1] - s[0] >= MIN_SPEECH]
 
@@ -129,10 +182,7 @@ def transcribe(ai: LocalAI, wav: Path, hint: str | None) -> dict:
 def do_end(ai: LocalAI, f: Path, tmp: Path, which: str, scan: float, seconds: float,
            hint: str | None) -> dict:
     win = tmp / f"{which}_scan.wav"
-    if which == "start":
-        to_wav(f, win, dur=scan)
-    else:
-        to_wav(f, win, sseof=scan)
+    method = extract(f, win, which, scan, tmp)
     segs = speech(win)
     wdur = wav_duration(win)
     if not segs:
@@ -151,7 +201,7 @@ def do_end(ai: LocalAI, f: Path, tmp: Path, which: str, scan: float, seconds: fl
     t["chars_per_s"] = round(len(t["text"]) / max(b - a, 1), 1)
     t["suspect"] = bool(t["dropped"]) or len(t["text"]) < 20 or t["chars_per_s"] < 3
     pos = {"offset": round(a, 1)} if which == "start" else {"offset_from_end": round(wdur - a, 1)}
-    return {"file": f.name, **pos, "length": round(b - a, 1), **t}
+    return {"file": f.name, **pos, "length": round(b - a, 1), "extract": method, **t}
 
 
 def process(ai: LocalAI, book: Path, args) -> dict:
@@ -175,7 +225,7 @@ def process(ai: LocalAI, book: Path, args) -> dict:
 def book_list(args) -> list[Path]:
     """Seznam knih celé knihovny – poprvé se projde NAS a uloží do --books-cache, pak se jen načte."""
     if args.books_cache.exists() and not args.rescan:
-        return [args.library / l for l in args.books_cache.read_text().splitlines() if l.strip()]
+        return [args.library / l for l in args.books_cache.read_text().split("\n") if l.strip()]
     print(f"procházím knihovnu {args.library} (jednorázově, může trvat pár minut)…", file=sys.stderr)
     books = scan_books(args.library)
     args.books_cache.parent.mkdir(parents=True, exist_ok=True)
@@ -188,7 +238,11 @@ def load_records(path: Path) -> dict[str, dict]:
     """JSONL → {kniha: poslední záznam}. Pozdější záznam (např. opakovaný po chybě) vyhrává."""
     recs: dict[str, dict] = {}
     if path.exists():
-        for line in path.read_text().splitlines():
+        # jen podle \n – str.splitlines() dělí i podle U+2028, \x1c… které bývají v přepisech/tazích
+        # (json.dumps s ensure_ascii=False je nechá v textu) → rozbité řádky by se tiše zahodily
+        for line in path.read_text().split("\n"):
+            if not line.strip():
+                continue
             try:
                 r = json.loads(line)
             except json.JSONDecodeError:  # useknutý poslední řádek po pádu
@@ -233,7 +287,7 @@ def main() -> None:
 
     books: list[Path] = [b if Path(b).is_absolute() else args.library / b for b in args.books]
     if args.books_file:
-        books += [args.library / l.strip() for l in args.books_file.read_text().splitlines() if l.strip()]
+        books += [args.library / l.strip() for l in args.books_file.read_text().split("\n") if l.strip()]
     if args.random:
         authors = [d for d in args.library.iterdir() if d.is_dir()]
         while len(books) < args.random and authors:

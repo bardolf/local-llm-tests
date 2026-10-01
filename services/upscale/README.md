@@ -65,3 +65,31 @@ Všechny modely na Radeonu 1–3.6 s na obálku (digital-art 1 s – malý model
 Pozn.: ~10 px písmo v originále **žádný model neobnoví spolehlivě** – informace tam není, GAN
 tvary písmen dokresluje („čte“ → „čto“). Pro obálky s důležitým drobným textem je lepší dohledat
 větší obálku online; upscale je až záloha.
+
+## Velké transformerové modely přes PyTorch + ROCm (2026-10-01, ~/tmp/obalky/velke)
+
+Skript [`upscale_torch.py`](upscale_torch.py), venv `engines/torch-sr` (torch 2.14.1+rocm7.2, torchvision
++rocm7.2, spandrel 0.4.2; **15 GB**), modely `models/upscale/` (Phhofm, github.com/Phhofm/models).
+RX 6600 = gfx1032, ROCm ji oficiálně neumí → `HSA_OVERRIDE_GFX_VERSION=10.3.0` (skript nastaví sám).
+
+```bash
+engines/torch-sr/bin/python services/upscale/upscale_torch.py \
+  -m models/upscale/4xRealWebPhoto_v4_drct-l.pth obalka.jpg obalka_4x.png
+```
+
+| model | arch. | param | 300×300 | 354×550 | VRAM | drobné písmo „čte Vojtěch“ |
+|---|---|---|---|---|---|---|
+| 4x_NMKD-Siax_200k (ncnn, pro srovnání) | ESRGAN | 17M | 2.4 s | 3.6 s | – | „čto“, čisté |
+| 4xBHI_dat2_real | DAT2 | 11M | 7.9 s | 9.2 s | 0.8 GB | „čto“, zubaté háčky |
+| 4xNomosWebPhoto_atd | ATD | 20M | 11.5 s | 17.3 s | 1.1 GB | „čto“, nejčistší tvary |
+| 4xNomos8kSCHAT-L | HAT-L | 41M | 10.7 s | 18.6 s | 1.6 GB | „čto“, měkké |
+| **4xRealWebPhoto_v4_drct-l** | DRCT-L | 28M | 11.0 s | 18.3 s | 1.1 GB | **„čte“ správně** (jediný), trochu zrnité |
+
+(Dlaždice 192 px, fp32. První běh vůbec ~24 s – kompilace kernelů, pak cache.)
+
+Rytina (Král Krysa): všechny velké modely zachovají tiskový rastr z teček jako Siax; DRCT-L
+nejostřejší, HAT-L nejměkčí. Žádný nevymýšlí síťovinu jako realesrgan-x4plus.
+
+Závěr: velké modely jsou o kousek lepší, hlavně **DRCT-L na drobné písmo**; 8 GB VRAM je víc než dost
+(špička 1.6 GB). Cena: ~5× pomalejší než Siax (11–18 s vs. 2–4 s na obálku) – pro stovky obálek
+pořád v pohodě. Pro dávku: Siax rychle na všechno, DRCT-L na obálky s drobným textem.
