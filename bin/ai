@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Klient pro orchestrátor (llama-swap). Proměnná AI_URL přepíše adresu.
+#
+#   ai status                      co běží (a kolik VRAM je volno)
+#   ai models                      dostupné modely
+#   ai load qwen9b                 načti model předem („teď se budu chvíli ptát“)
+#   ai unload [model]              uvolni model (bez argumentu všechny)
+#   ai chat [model] "dotaz"        jednorázový dotaz (výchozí model: chat = qwen9b)
+#   ai embed "text" ["text2"…]     vrátí JSON s embeddingy (bge-m3)
+#   ai stt soubor.mp3 [format]     přepis (json|text|srt|vtt|verbose_json, výchozí text)
+#   ai logs [model]                živé logy
+set -euo pipefail
+URL="${AI_URL:-http://127.0.0.1:8100}"
+
+vram() {
+  local d=/sys/class/drm/card1/device
+  [[ -r $d/mem_info_vram_used ]] || return 0
+  awk -v u="$(cat $d/mem_info_vram_used)" -v t="$(cat $d/mem_info_vram_total)" \
+    'BEGIN{printf "VRAM: %.2f / %.2f GB obsazeno\n", u/2^30, t/2^30}'
+}
+
+cmd="${1:-status}"; shift || true
+case "$cmd" in
+  status)
+    curl -sf "$URL/running" | python3 -c 'import json,sys
+r=json.load(sys.stdin).get("running",[])
+print("\n".join("  %-12s %s" % (m["model"], m.get("state","")) for m in r) or "  (nic neběží)")'
+    vram ;;
+  models)
+    curl -sf "$URL/v1/models" | python3 -c 'import json,sys
+for m in json.load(sys.stdin)["data"]: print("  %-12s %s" % (m["id"], m.get("name","")))' ;;
+  load)
+    m="${1:?model}"; echo "načítám $m…"
+    curl -sf --max-time 300 "$URL/upstream/$m/health" >/dev/null && echo "ok" ;;
+  unload)
+    if [[ -n "${1:-}" ]]; then curl -sf -X POST "$URL/api/models/unload/$1"; else curl -sf -X POST "$URL/api/models/unload"; fi
+    echo ;;
+  chat)
+    if [[ $# -ge 2 ]]; then m="$1"; shift; else m=chat; fi
+    python3 - "$URL" "$m" "$*" <<'PY'
+import json, sys, urllib.request
+url, model, prompt = sys.argv[1:]
+body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}]}).encode()
+req = urllib.request.Request(url + "/v1/chat/completions", body, {"Content-Type": "application/json"})
+print(json.load(urllib.request.urlopen(req, timeout=600))["choices"][0]["message"]["content"])
+PY
+    ;;
+  embed)
+    python3 - "$URL" "$@" <<'PY'
+import json, sys, urllib.request
+url, *texts = sys.argv[1:]
+body = json.dumps({"model": "embed", "input": texts}).encode()
+req = urllib.request.Request(url + "/v1/embeddings", body, {"Content-Type": "application/json"})
+print(json.dumps(json.load(urllib.request.urlopen(req, timeout=600))))
+PY
+    ;;
+  stt)
+    f="${1:?soubor}"; fmt="${2:-text}"
+    curl -sf "$URL/v1/audio/transcriptions" -F model=whisper -F "file=@$f" -F "response_format=$fmt" ;;
+  logs)
+    curl -sfN "$URL/logs/stream${1:+/$1}" ;;
+  *) sed -n '2,13p' "$0"; exit 2 ;;
+esac

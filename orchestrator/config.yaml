@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+#
+# llama-swap – jeden port, podle pole "model" v requestu spustí příslušný backend.
+# Backendy jsou skripty v services/*/run.sh (dají se pouštět i ručně bez orchestrátoru).
+# Podrobnosti: orchestrator/README.md
+
+healthCheckTimeout: 180
+logLevel: info
+logTimeFormat: rfc3339
+logToStdout: "proxy"
+startPort: 8201          # backendy dostanou porty 8201+ (jen na 127.0.0.1)
+sendLoadingState: false  # neposílat "loading…" do reasoning pole – skripty chtějí čistý výstup
+
+# Nečinný model se po 10 minutách uvolní z VRAM (per-model přepsáno níž).
+globalTTL: 600
+
+macros:
+  svc: "${env.HOME}/projects/llm/services"
+
+models:
+  # ---------- chat ----------
+  "qwen9b":
+    name: "Qwen3.5 9B Q4_K_M"
+    description: "Větší, ale na Vulkanu pomalý (~16 tok/s) a v testu nebyl lepší než gemma4b"
+    cmd: ${svc}/chat/run.sh qwen9b ${PORT}
+    aliases: ["chat-big"]
+    ttl: 600
+
+  "qwen4b":
+    name: "Qwen3.5 4B Q4_K_M"
+    description: "Pomalý na Vulkanu (~19 tok/s), v testu halucinoval – spíš jen pro srovnání"
+    cmd: ${svc}/chat/run.sh qwen4b ${PORT}
+    ttl: 600
+
+  "gemma4b":
+    name: "Gemma 4 E4B Q4_0"
+    description: "Výchozí chat: ~43 tok/s, nejlepší čeština a nejméně halucinací v testu"
+    cmd: ${svc}/chat/run.sh gemma4b ${PORT}
+    aliases: ["chat"]
+    ttl: 600
+
+  # ---------- embeddingy ----------
+  "bge-m3":
+    name: "BGE-M3 Q8_0 (1024 dim)"
+    cmd: ${svc}/embed/run.sh bge-m3 ${PORT}
+    aliases: ["embed"]
+    ttl: 900
+
+  "qwen3-emb":
+    name: "Qwen3-Embedding 0.6B Q8_0 (1024 dim)"
+    cmd: ${svc}/embed/run.sh qwen3-emb ${PORT}
+    ttl: 900
+
+  # ---------- přepis řeči ----------
+  "whisper":
+    name: "Whisper large-v3-turbo q8_0"
+    description: "POST /v1/audio/transcriptions, multipart file=, language=cs"
+    cmd: ${svc}/whisper/run.sh turbo-q8 ${PORT}
+    aliases: ["whisper-1"]   # výchozí jméno v OpenAI klientech
+    ttl: 900
+
+# Co smí běžet současně (8 GB VRAM). Solver při požadavku na model X vybere
+# nejlevnější množinu obsahující X a vyhodí, co v ní není.
+# Naměřeno (nad baseline 1.22 GB desktopu): gemma4b 2.8, qwen4b 2.8, qwen9b 5.0,
+# bge-m3 0.6, whisper 0.8 GB. Po přechodu na -np 4: gemma4b+bge-m3+whisper = 5.83 GB celkem,
+# qwen9b+bge-m3 = 6.95 GB.
+# Viz docs/BENCHMARKS.md.
+routing:
+  router:
+    use: matrix
+    settings:
+      matrix:
+        vars:
+          q9: qwen9b
+          q4: qwen4b
+          g4: gemma4b
+          e:  bge-m3
+          e2: qwen3-emb
+          w:  whisper
+        evict_costs:
+          q9: 3      # nejpomalejší start
+        sets:
+          big_chat:   "q9 & (e | e2)"
+          small_chat: "(q4 | g4) & (e | e2) & w"
+          audio:      "w & (e | e2)"

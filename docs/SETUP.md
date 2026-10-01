@@ -1,0 +1,93 @@
+# Instalace od nuly
+
+Ověřeno na Fedora 44, RX 6600 XT, Mesa 26.2.3 (RADV). ROCm **není** potřeba.
+
+## 1. Systémové balíky
+
+```bash
+sudo dnf install -y cmake ninja-build gcc-c++ git ccache ffmpeg \
+  vulkan-headers vulkan-loader-devel vulkan-tools mesa-vulkan-drivers \
+  glslc glslang glslang-devel spirv-headers-devel spirv-tools-devel \
+  libcurl-devel openssl-devel chromaprint-tools
+# volitelně pro testy: espeak-ng
+```
+
+Bez `glslc` a `spirv-headers-devel` Vulkan backend ggml nezkompiluje
+(`Could not find a package configuration file provided by "SPIRV-Headers"`).
+
+Kontrola GPU: `vulkaninfo --summary` → musí být `AMD Radeon RX 6600 XT (RADV NAVI23)`.
+
+## 2. llama.cpp (chat + embeddingy)
+
+```bash
+cd engines
+git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
+cd llama.cpp
+cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=ON -DLLAMA_BUILD_TESTS=OFF
+cmake --build build -j 20          # ~4 min
+./build/bin/llama-server --list-devices   # → Vulkan0: AMD Radeon RX 6600 XT
+```
+
+## 3. whisper.cpp (přepis + VAD)
+
+```bash
+cd engines
+git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git
+cd whisper.cpp
+cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=ON \
+  -DWHISPER_BUILD_TESTS=OFF -DWHISPER_FFMPEG=OFF
+cmake --build build -j 20
+```
+
+(`WHISPER_FFMPEG=OFF` – server převádí formáty přes externí `ffmpeg` s `--convert`.)
+
+## 4. Real-ESRGAN (obálky)
+
+```bash
+mkdir -p engines/realesrgan && cd engines/realesrgan
+curl -LO https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip
+unzip realesrgan-ncnn-vulkan-20220424-ubuntu.zip && rm *.zip && chmod +x realesrgan-ncnn-vulkan
+```
+
+Novější modely (výchozí 4x_NMKD-Siax_200k) přes upscayl-ncnn:
+
+```bash
+mkdir -p engines/upscayl/models && cd engines/upscayl
+curl -LO https://github.com/upscayl/upscayl-ncnn/releases/download/20251207-174704/upscayl-bin-20251207-174704-linux.zip
+unzip upscayl-bin-*-linux.zip && rm upscayl-bin-*-linux.zip
+ln -sfn upscayl-bin-20251207-174704-linux/upscayl-bin upscayl-bin && chmod +x upscayl-bin
+for m in ultrasharp-4x high-fidelity-4x remacri-4x upscayl-standard-4x ultramix-balanced-4x digital-art-4x; do
+  for e in param bin; do curl -sfL -o models/$m.$e https://raw.githubusercontent.com/upscayl/upscayl/main/resources/models/$m.$e; done; done
+for m in 4xNomos8kSC 4xLSDIRplusC 4x_NMKD-Siax_200k; do
+  for e in param bin; do curl -sfL -o models/$m.$e https://raw.githubusercontent.com/upscayl/custom-models/main/models/$m.$e; done; done
+```
+
+## 5. llama-swap (orchestrátor)
+
+```bash
+mkdir -p engines/llama-swap && cd engines/llama-swap
+curl -L https://github.com/mostlygeek/llama-swap/releases/download/v261/llama-swap_261_linux_amd64.tar.gz | tar xz
+```
+
+## 6. Modely
+
+```bash
+bin/fetch-models.sh      # ~17 GB, paralelně 4 soubory, dá se přerušit a pustit znovu
+```
+
+## 7. Spuštění
+
+```bash
+orchestrator/install.sh          # systemd --user služba, port 8100
+bin/ai status
+```
+
+## Aktualizace enginů
+
+```bash
+cd engines/llama.cpp && git pull && cmake --build build -j 20
+cd engines/whisper.cpp && git pull && cmake --build build -j 20
+```
+
+Pozor: llama.cpp občas mění/odstraňuje přepínače (např. `--no-mmap` už neexistuje,
+nahrazen novým nastavením mmap s výchozím `auto`). Po aktualizaci spustit `bench/smoke.sh`.
