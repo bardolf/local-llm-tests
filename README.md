@@ -7,8 +7,12 @@ Malé lokální modely jako podpora pro audioknihovnu: přepis řeči, úklid me
 embeddingy, zvětšení obálek, dělení na kapitoly, otisky nahrávek. Všechno přes **Vulkan**
 (Mesa RADV), ROCm není potřeba.
 
-Tenhle adresář = projekt **`~/projects/llm`** na desktopu (bez buildů enginů `engines/`,
-modelů `models/` ~16 GB a výstupů `data/` – ty jsou jen na desktopu; postavit znovu: `docs/SETUP.md`).
+Tenhle adresář = projekt **`~/projects/llm`** na desktopu. Pracovní kopie je git klon
+`~/projects/audiobooksprocessing` a **`~/projects/llm` je symlink na jeho `desktop/`** – cestu
+`~/projects/llm` používá systemd služba, config orchestrátoru, příkazy ze serveru i venv
+`engines/torch-sr` (absolutní cesty), proto symlink nerušit. Mimo git (`.gitignore`) jsou buildy
+`engines/` (~17 GB vč. PyTorch ROCm), modely `models/` (~17 GB) a výstupy `data/`; postavit znovu:
+`docs/SETUP.md`. Před prací `git pull` (do repa commituje i server session).
 
 ## Co je k dispozici
 

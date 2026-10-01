@@ -114,3 +114,7 @@
   Velké SR modely: 8–19 s/obálka, VRAM ≤ 1.6 GB. DRCT-L jediný napsal drobné „čte“ správně.
 - Oprava závěru (Milan si všiml): na „Hamerský“ je nejlepší **ATD**, DRCT-L tam dělá tmavé fleky.
   Celkově na drobné písmo doporučeno ATD (4xNomosWebPhoto_atd), ne DRCT-L.
+- **Sjednocení:** pracovní kopie = git klon `~/projects/audiobooksprocessing`, `~/projects/llm` je
+  symlink na `…/desktop`. `engines/`, `models/`, `data/` přesunuty do `desktop/` (mv, okamžité) a
+  přidány do `.gitignore`. Orchestrátor restartován (unit je symlink přes ~/projects/llm), smoke 7/7 OK,
+  torch-sr venv OK (má absolutní cesty přes ~/projects/llm → symlink nerušit). Konec rsync kopírování.
