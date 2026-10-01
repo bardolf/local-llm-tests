@@ -125,3 +125,4 @@
   zkopírována do `~/.claude/projects/-home-milan-projects-audiobooksprocessing/memory/`.
   Ověřeno s odsunutým symlinkem: smoke 7/7, torch-sr (GPU), intro-outro export OK. Symlink zatím vrácen;
   smazat lze `rm ~/projects/llm` (venv torch-sr: volat `bin/python -m pip`, ne `bin/pip`).
+- Symlink `~/projects/llm` smazán; projekt běží jen z `~/projects/audiobooksprocessing/desktop`.
