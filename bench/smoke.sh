@@ -36,6 +36,10 @@ out=$("$AI" stt "$A/cs_intro.mp3" 2>&1)
 out=$("$AI" embed "kniha" "book" 2>&1 | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print(len(d), len(d[0]["embedding"]))' 2>&1)
 [[ "$out" == "2 1024" ]] && ok "embed: 2 × 1024" || bad "embed: $out"
 
+out=$(curl -s -D - -o "$TMP/up.jpg" "${AI_URL:-http://127.0.0.1:8100}/upstream/upscale/upscale" \
+  -F file=@"$A/cover_200.jpg" -F width=700 2>&1 | grep -i '^x-upscale-output' | tr -d '\r')
+[[ "$out" == *700x700* ]] && ok "upscale služba: 200 → 700 px (siax)" || bad "upscale služba: $out"
+
 for m in ${SMOKE_CHAT:-qwen4b}; do
   out=$("$AI" chat "$m" 'Odpověz jedním slovem: hlavní město Česka?' 2>&1)
   [[ "$out" == *Praha* ]] && ok "chat $m: Praha" || bad "chat $m: $out"

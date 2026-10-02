@@ -12,6 +12,7 @@ Zkopíruj na server ke skriptům, nebo importuj přímo. Adresa: proměnná LOCA
     ai.credits_from_transcript(text)                  # → {"autor", "nazev", "vypravec", "vydavatel", "rok"}
                                                       #   (tip: přepis dělat s prompt="autor, název, vypravěč…" z metadat)
     ai.normalize_authors(["SAPKOWSKI ANDRZEJ", ...])  # → {"SAPKOWSKI ANDRZEJ": "Andrzej Sapkowski", ...}
+    img, hdr = ai.upscale("obalka.jpg", model="atd", width=1000)  # → bytes + {"X-Upscale-Model": …}
 """
 from __future__ import annotations
 
@@ -97,6 +98,25 @@ class LocalAI:
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
             body = r.read().decode()
         return json.loads(body) if fmt in ("json", "verbose_json") else body
+
+    # ---------- upscale obálek ----------
+    def upscale(self, path: str | Path, model: str = "siax", width: int | None = None,
+                fmt: str | None = None) -> tuple[bytes, dict]:
+        """Zvětší obrázek (služba `upscale` za orchestrátorem). model: siax (rychlý) | atd (drobné písmo) | …
+        Vrací (bytes obrázku, hlavičky X-Upscale-*)."""
+        path = Path(path)
+        form = {"model": model, **({"width": width} if width else {}), **({"format": fmt} if fmt else {})}
+        boundary = uuid.uuid4().hex
+        parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+                 for k, v in form.items()]
+        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{path.name}"\r\n'
+                     f"Content-Type: {ctype}\r\n\r\n".encode() + path.read_bytes() + b"\r\n")
+        parts.append(f"--{boundary}--\r\n".encode())
+        req = urllib.request.Request(self.url + "/upstream/upscale/upscale", b"".join(parts),
+                                     {"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return r.read(), {k: v for k, v in r.headers.items() if k.lower().startswith("x-upscale")}
 
     # ---------- úlohy pro audioknihovnu ----------
     def credits_from_transcript(self, transcript: str) -> dict:

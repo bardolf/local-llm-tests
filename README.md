@@ -24,11 +24,11 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 | **chat** | Gemma 4 E4B (`chat`, ~43 tok/s) | rychlý chat, volný text | [services/chat](services/chat/) |
 | **chat-big** | Qwen3.5 9B (`chat-big`, ~16 tok/s) | přesná extrakce a normalizace jmen | [services/chat](services/chat/) |
 | **embed** | bge-m3 (1024 dim) | sémantické hledání, duplicity podle obsahu | [services/embed](services/embed/) |
-| upscale | 4x_NMKD-Siax_200k (+ 9 dalších) | zvětšení malých obálek (1–4 s) | [services/upscale](services/upscale/) |
+| **upscale** | Siax (rychlý) / ATD (drobné písmo) + další | zvětšení malých obálek, HTTP i CLI | [services/upscale](services/upscale/) |
 | vad | Silero VAD (CPU) | hranice kapitol podle ticha | [services/vad](services/vad/) |
 | fingerprint | Chromaprint fpcalc (CPU) | stejná nahrávka v jiné verzi | [services/fingerprint](services/fingerprint/) |
 
-Serverové služby (whisper, chat, embed) spouští **orchestrátor llama-swap** na portu **8100** podle pole
+Serverové služby (whisper, chat, embed, upscale) spouští **orchestrátor llama-swap** na portu **8100** podle pole
 `model` v requestu; co se nevejde do VRAM, vystřídá, nečinné po 10–15 min uvolní
 ([orchestrator/](orchestrator/)). Backendy poslouchají jen na `127.0.0.1`; port **8100 je ve firewallu
 otevřený jen pro NAS 192.168.1.11** → ze serveru `http://192.168.1.10:8100` (OpenAI API).
@@ -46,7 +46,18 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
 - Posílat krátké klipy (např. `server/import/clips.py`), ne celé knihy. Formát libovolný (server převádí ffmpegem).
 - Chat: `POST /v1/chat/completions` s `model=chat` (Gemma 4, rychlý) / `chat-big` (Qwen3.5 9B, přesnější extrakce),
   JSON výstup přes `response_format: {"type":"json_schema",…}`. Embeddingy: `POST /v1/embeddings`, `model=embed`.
-- Python klient bez závislostí: [clients/localai.py](clients/localai.py) – `LocalAI("http://192.168.1.10:8100")`.
+- **Upscale obálek:** `POST /upstream/upscale/upscale`, multipart `file` (jpg/png), volitelně `model`
+  (`siax` výchozí ~3 s | `atd` drobné písmo ~8–16 s | `remacri`, `lsdir`, `x4plus`, `drct`, `hat`, `dat2`),
+  `width` (cílová šířka; 4× AI a pak zmenšení), `format` (jpg|png, výchozí jako vstup), `quality`.
+  Odpověď = přímo obrázek, hlavičky `X-Upscale-Model`, `X-Upscale-Time-Ms`, `X-Upscale-Input`, `X-Upscale-Output`.
+  Když je vstup už aspoň `width` široký, AI se přeskočí (`X-Upscale-Model: none`). Chyby: JSON `{"error": …}`.
+  ```bash
+  curl -s http://192.168.1.10:8100/upstream/upscale/upscale -F file=@cover.jpg -F model=atd -F width=1000 \
+       -D hlavicky.txt -o cover_big.jpg
+  ```
+  `GET /upstream/upscale/models` – seznam modelů.
+- Python klient bez závislostí: [clients/localai.py](clients/localai.py) – `LocalAI("http://192.168.1.10:8100")`
+  (`transcribe`, `chat`, `chat_json`, `embed`, `upscale`).
 - První požadavek po pauze o 1–2 s pomalejší (načtení modelu); nečinné modely se po 10–15 min uvolní.
 
 ```bash

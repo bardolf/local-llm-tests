@@ -59,11 +59,19 @@ models:
     aliases: ["whisper-1"]   # výchozí jméno v OpenAI klientech
     ttl: 900
 
+  # ---------- upscale obálek ----------
+  "upscale":
+    name: "Upscale obálek (siax / atd / …)"
+    description: "POST /upstream/upscale/upscale, multipart file=, model=siax|atd, width="
+    cmd: ${svc}/upscale/run.sh ${PORT}
+    checkEndpoint: /health
+    ttl: 300
+
 # Co smí běžet současně (8 GB VRAM). Solver při požadavku na model X vybere
 # nejlevnější množinu obsahující X a vyhodí, co v ní není.
 # Naměřeno (nad baseline 1.22 GB desktopu): gemma4b 2.8, qwen4b 2.8, qwen9b 5.0,
 # bge-m3 0.6, whisper 0.8 GB. Po přechodu na -np 4: gemma4b+bge-m3+whisper = 5.83 GB celkem,
-# qwen9b+bge-m3 = 6.95 GB.
+# qwen9b+bge-m3 = 6.95 GB. upscale: siax (ncnn) jen po dobu požadavku, atd drží ~1 GB + ROCm kontext.
 # Viz docs/BENCHMARKS.md.
 routing:
   router:
@@ -77,9 +85,10 @@ routing:
           e:  bge-m3
           e2: qwen3-emb
           w:  whisper
+          up: upscale
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
           big_chat:   "q9 & (e | e2)"
-          small_chat: "(q4 | g4) & (e | e2) & w"
-          audio:      "w & (e | e2)"
+          small_chat: "(q4 | g4) & (e | e2) & w & up"
+          audio:      "w & (e | e2) & up"

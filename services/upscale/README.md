@@ -18,6 +18,19 @@ ESRGAN_MODEL=realesrgan-x4plus ./upscale.sh obalka.jpg
 FREE_GPU=1 ./upscale.sh ...                   # nejdřív uvolnit VRAM v orchestrátoru
 ```
 
+## HTTP služba (přes orchestrátor, port 8100)
+
+[`server.py`](server.py) + [`run.sh`](run.sh) – v orchestrátoru model `upscale` (spustí se při prvním
+požadavku, po 5 min nečinnosti se uvolní). Volání: `POST /upstream/upscale/upscale`, popis polí
+v hlavičce `server.py` a v desktop README („Volání ze serveru“).
+
+- ncnn modely (siax, remacri, lsdir, x4plus) se spouští per požadavek (upscayl-bin / realesrgan-ncnn-vulkan),
+  torch modely (atd, drct, hat, dat2) se načtou jednou a drží v paměti (jen jeden naráz).
+- GPU zámek – požadavky se zpracují po jednom. Limit vstupu 2048 px (delší strana), upload 40 MB.
+- Naměřeno přes :8100: siax 342×600 → 1000×1754 **3.1 s** (studený start služby +0.3 s), atd 300×300
+  **16 s** první (načtení modelu) / **8 s** dál. VRAM s načteným atd + whisper + embed = 2.9 GB celkem.
+- Lokálně: `bin/ai upscale in.jpg out.jpg [model] [šířka]`.
+
 ## Naměřeno
 
 - 200×200 → 800×800: **1.5 s** (vč. načtení modelu). První spuštění vůbec ~30 s (kompilace shaderů,

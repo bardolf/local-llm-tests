@@ -8,6 +8,7 @@
 #   ai chat [model] "dotaz"        jednorázový dotaz (výchozí model: chat = qwen9b)
 #   ai embed "text" ["text2"…]     vrátí JSON s embeddingy (bge-m3)
 #   ai stt soubor.mp3 [format]     přepis (json|text|srt|vtt|verbose_json, výchozí text)
+#   ai upscale in.jpg out.jpg [model] [šířka]   zvětšit obálku (model siax | atd | …)
 #   ai logs [model]                živé logy
 set -euo pipefail
 URL="${AI_URL:-http://127.0.0.1:8100}"
@@ -57,7 +58,11 @@ PY
   stt)
     f="${1:?soubor}"; fmt="${2:-text}"
     curl -sf "$URL/v1/audio/transcriptions" -F model=whisper -F "file=@$f" -F "response_format=$fmt" ;;
+  upscale)
+    in="${1:?vstup}"; out="${2:?výstup}"; m="${3:-siax}"; w="${4:-}"
+    curl -sf -D /dev/stderr -o "$out" "$URL/upstream/upscale/upscale" -F "file=@$in" -F "model=$m" ${w:+-F "width=$w"} \
+      2> >(grep -i '^x-upscale' >&2) && echo "$out" ;;
   logs)
     curl -sfN "$URL/logs/stream${1:+/$1}" ;;
-  *) sed -n '2,13p' "$0"; exit 2 ;;
+  *) sed -n '2,14p' "$0"; exit 2 ;;
 esac

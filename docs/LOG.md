@@ -129,3 +129,4 @@
 - `desktop/data/intro-outro.jsonl` (2254 knih, 12 chyb – opakovaný běh zatím nespuštěn) přidán do gitu; `.gitignore`: `data/` → `**/data/*` + výjimka pro tento soubor.
 - intro-outro opakovaný běh: 10/12 OK; server mezitím opravil knihovnu → nová volba `--prune` odebrala 4 zastaralé cesty, přepsány 2 přejmenované knihy. **2252 knih, 0 chyb.** Ranní běh byl pomalý (~40 s/kniha, asi uspané disky NASu); pak opět ~8 s. whisper po přestavbě: encode 474 ms (dřív 1989).
 - **Firewall:** port 8100 otevřen pro NAS 192.168.1.11 (rich rule, permanentní). Ověřeno z NASu: /health 200, přepis klipu přes /v1/audio/transcriptions OK. README: sekce „Volání ze serveru“.
+- **Upscale jako HTTP služba** přes orchestrátor (`/upstream/upscale/upscale`, model `upscale`, TTL 5 min): `services/upscale/server.py` (stdlib HTTP + PIL, ncnn i torch modely, hlavičky X-Upscale-*). Ověřeno lokálně i z NASu; klient `localai.upscale()`, `bin/ai upscale`, smoke 8/8.
