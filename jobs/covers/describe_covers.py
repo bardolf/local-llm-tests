@@ -301,6 +301,12 @@ def main() -> None:
 
 def report(args) -> None:
     recs = load_records(args.out)
+    if not recs:
+        others = sorted(p.name for p in args.out.parent.glob("covers*.jsonl") if p != args.out)
+        print(f"{args.out}: zatím žádné výsledky (soubor {'je prázdný' if args.out.exists() else 'neexistuje'})."
+              + (f"\nJiné výstupy: {', '.join(others)} → --out data/<soubor>" if others else ""))
+        return
+    print(f"{args.out}")
     for model in sorted({m for (_, m, _) in recs}):
         latest = latest_per_book(recs, model)
         vals = list(latest.values())
