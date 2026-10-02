@@ -22,6 +22,7 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 |---|---|---|---|
 | **whisper** | Whisper large-v3-turbo q8_0 + Silero VAD | přepis řeči (~7× realtime) | [services/whisper](services/whisper/) |
 | **chat** | Gemma 4 E4B (`chat`, ~43 tok/s) | rychlý chat, volný text | [services/chat](services/chat/) |
+| chat-long | Gemma 4 E4B, 1 slot, 64k kontext | dlouhé konverzace (`bin/ai talk`, web chat) | [services/chat](services/chat/) |
 | **chat-big** | Qwen3.5 9B (`chat-big`, ~16 tok/s) | přesná extrakce a normalizace jmen | [services/chat](services/chat/) |
 | **embed** | bge-m3 (1024 dim) | sémantické hledání, duplicity podle obsahu | [services/embed](services/embed/) |
 | **vision** | Qwen3.5 9B / Gemma 4 E4B + mmproj | popis a čtení textu z obrázku (kontrola obálek) | [services/chat](services/chat/) |
@@ -62,6 +63,10 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
   přesné OCR i popis, ~20–40 s, ~6.5 GB → běží sám) nebo `vision-fast` (Gemma 4 E4B, ~17 s, drobné chyby v OCR).
   Obrázek jako `{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,…"}}` v `content`. Vzor kontroly obálky
   proti očekávanému autorovi/názvu (JSON schema): [bench/cover_check.py](bench/cover_check.py).
+- **Konverzace:** server si historii nepamatuje – klient posílá celou historii v `messages`. Web chat s historií:
+  `http://127.0.0.1:8100/upstream/chat-long/` (na desktopu; jiný model = jiný název v cestě), terminál: `bin/ai talk`.
+  Kontext: `chat` 8k tokenů na konverzaci (4 sloty), `chat-long` 64k. Pozor: malé modely mají slabé znalosti
+  o konkrétních knihách (Gemma o Saturninovi tvrdila „sci-fi“) – na práci s dodaným textem OK, na fakta ne.
 - Python klient bez závislostí: [clients/localai.py](clients/localai.py) – `LocalAI("http://192.168.1.10:8100")`
   (`transcribe`, `chat`, `chat_json`, `embed`, `upscale`).
 - První požadavek po pauze o 1–2 s pomalejší (načtení modelu); nečinné modely se po 10–15 min uvolní.
@@ -69,7 +74,8 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
 ```bash
 cd ~/projects/audiobooksprocessing/desktop
 bin/ai status                      # co běží, kolik VRAM
-bin/ai chat "Kdo napsal Babičku?"  # chat (gemma4b)
+bin/ai chat "Kdo napsal Babičku?"  # jednorázový dotaz (gemma4b)
+bin/ai talk                        # konverzace s historií (chat-long: Gemma, 64k kontext); /reset /model /save
 bin/ai stt kniha.mp3 srt           # přepis
 bin/ai embed "text"                # embedding
 bin/ai unload                      # uvolnit GPU (sdílí se s lc0 – šachy z NASu)

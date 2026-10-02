@@ -5,7 +5,8 @@
 #   ai models                      dostupné modely
 #   ai load qwen9b                 načti model předem („teď se budu chvíli ptát“)
 #   ai unload [model]              uvolni model (bez argumentu všechny)
-#   ai chat [model] "dotaz"        jednorázový dotaz (výchozí model: chat = qwen9b)
+#   ai chat [model] "dotaz"        jednorázový dotaz (výchozí model: chat = gemma4b)
+#   ai talk [model] [-s "systém"]   konverzace s historií (výchozí chat-long, 64k kontext)
 #   ai embed "text" ["text2"…]     vrátí JSON s embeddingy (bge-m3)
 #   ai stt soubor.mp3 [format]     přepis (json|text|srt|vtt|verbose_json, výchozí text)
 #   ai upscale in.jpg out.jpg [model] [šířka]   zvětšit obálku (model siax | atd | …)
@@ -46,6 +47,8 @@ req = urllib.request.Request(url + "/v1/chat/completions", body, {"Content-Type"
 print(json.load(urllib.request.urlopen(req, timeout=600))["choices"][0]["message"]["content"])
 PY
     ;;
+  talk)
+    exec python3 "$(dirname "$0")/ai-talk.py" "$@" ;;
   embed)
     python3 - "$URL" "$@" <<'PY'
 import json, sys, urllib.request
@@ -64,5 +67,5 @@ PY
       2> >(grep -i '^x-upscale' >&2) && echo "$out" ;;
   logs)
     curl -sfN "$URL/logs/stream${1:+/$1}" ;;
-  *) sed -n '2,14p' "$0"; exit 2 ;;
+  *) sed -n '2,15p' "$0"; exit 2 ;;
 esac

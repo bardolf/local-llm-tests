@@ -14,6 +14,7 @@ Request na jiný model, který se do VRAM nevejde spolu s ním, ho vystřídá.
 |---|---|---|---|
 | `gemma4b` | `chat` | Gemma 4 E4B Q4_0 – výchozí, ~43 tok/s | 10 min |
 | `qwen9b` | `chat-big` | Qwen3.5 9B Q4_K_M – přesnější extrakce, ~16 tok/s | 10 min |
+| `gemma4b-long` | `chat-long` | Gemma 4 E4B, 1 slot, 64k kontext – dlouhé konverzace | 15 min |
 | `qwen4b` | | Qwen3.5 4B Q4_K_M – jen pro srovnání | 10 min |
 | `bge-m3` | `embed` | embeddingy 1024 dim | 15 min |
 | `qwen3-emb` | | embeddingy 1024 dim (alternativa) | 15 min |

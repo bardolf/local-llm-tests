@@ -39,6 +39,13 @@ models:
     aliases: ["chat"]
     ttl: 600
 
+  "gemma4b-long":
+    name: "Gemma 4 E4B – dlouhá konverzace"
+    description: "1 slot, 64k kontext (bin/ai talk, web chat /upstream/chat-long/)"
+    cmd: ${svc}/chat/run.sh gemma4b-long ${PORT}
+    aliases: ["chat-long"]
+    ttl: 900
+
   # ---------- vision (popis/kontrola obrázků, např. obálek) ----------
   "qwen9b-vision":
     name: "Qwen3.5 9B + vision"
@@ -97,6 +104,7 @@ routing:
           q9: qwen9b
           q4: qwen4b
           g4: gemma4b
+          gl: gemma4b-long
           e:  bge-m3
           e2: qwen3-emb
           w:  whisper
@@ -107,7 +115,7 @@ routing:
           q9: 3      # nejpomalejší start
         sets:
           big_chat:   "q9 & (e | e2)"
-          small_chat: "(q4 | g4) & (e | e2) & w & up"
+          small_chat: "(q4 | g4 | gl) & (e | e2) & w & up"
           audio:      "w & (e | e2) & up"
           vision:     "v"
           vision_fast: "vf & (e | e2) & up"
