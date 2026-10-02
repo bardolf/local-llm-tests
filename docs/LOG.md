@@ -127,3 +127,4 @@
   smazat lze `rm ~/projects/llm` (venv torch-sr: volat `bin/python -m pip`, ne `bin/pip`).
 - Symlink `~/projects/llm` smazán; projekt běží jen z `~/projects/audiobooksprocessing/desktop`.
 - `desktop/data/intro-outro.jsonl` (2254 knih, 12 chyb – opakovaný běh zatím nespuštěn) přidán do gitu; `.gitignore`: `data/` → `**/data/*` + výjimka pro tento soubor.
+- intro-outro opakovaný běh: 10/12 OK; server mezitím opravil knihovnu → nová volba `--prune` odebrala 4 zastaralé cesty, přepsány 2 přejmenované knihy. **2252 knih, 0 chyb.** Ranní běh byl pomalý (~40 s/kniha, asi uspané disky NASu); pak opět ~8 s. whisper po přestavbě: encode 474 ms (dřív 1989).

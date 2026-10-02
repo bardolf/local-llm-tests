@@ -43,6 +43,8 @@ jobs/intro-outro/transcribe_intro_outro.py "Agatha Christie/Krysy (1996)"   # ko
 jobs/intro-outro/transcribe_intro_outro.py --books-file seznam.txt --out data/x.jsonl
 jobs/intro-outro/transcribe_intro_outro.py --random 5 --out data/test.jsonl
 jobs/intro-outro/transcribe_intro_outro.py --workers 1                  # sériově
+jobs/intro-outro/transcribe_intro_outro.py --prune                      # odebrat knihy, které na NASu zmizely
+                                                                        # nebo se přejmenovaly (jen stat cest)
 ```
 
 ## Paralelizace
@@ -120,3 +122,12 @@ Konečný stav běhu: 2254 knih, **12 s chybou** (9 v průběhu + Tisíc a jedna
 | `Ivan Binar/K1NOLP~K/KDP9XX~Y.M4B` | **8.3 mangled jméno** (Samba) – skutečný název adresáře/souboru na NASu obsahuje znaky, které CIFS nepřenese (`:` `?` `"` …) → přes share nejde otevřít; přejmenovat na serveru |
 
 Další zjištění: v knihách je `extract` v záznamu – kolik souborů potřebovalo záložní cestu.
+
+## Opakovaný běh 2026-10-02
+
+10 z 12 chybných knih prošlo. Mezitím server session opravila knihovnu (MP3 vybalené z WAV, přejmenování
+8.3 jmen, odstranění DRM knihy), takže zbylé „chyby“ byly zastaralé cesty → `--prune` (nová volba)
+odebral 4 záznamy (Binar `K1NOLP~K`, Čapek `RJOQ7M~S`, Banková, duplicitní Michal – Krok stranou
+`{Lukáš Hlavica}`) a přepsány nové cesty `Ivan Binar/Kudy Tudy! (2003)`, `Karel Čapek/R.U.R`.
+
+**Stav: 2252 knih, 0 chyb.** Když server knihy přejmenuje: `--prune` + `--rescan` (nové cesty).

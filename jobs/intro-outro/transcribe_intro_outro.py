@@ -12,6 +12,7 @@ Použití:
   transcribe_intro_outro.py                                  # celá knihovna, naváže, kde skončil
   transcribe_intro_outro.py --limit 100                      # jen dalších 100 knih
   transcribe_intro_outro.py --rescan                         # znovu projít NAS (přibyly knihy)
+  transcribe_intro_outro.py --prune                          # odebrat knihy, které na NASu zmizely/přejmenovaly se
   transcribe_intro_outro.py "Agatha Christie/Krysy (1996)"   # konkrétní knihy
   transcribe_intro_outro.py --books-file seznam.txt          # jedna kniha (relativní cesta) na řádek
   transcribe_intro_outro.py --random 5                       # 5 náhodných knih (pro test)
@@ -251,6 +252,28 @@ def load_records(path: Path) -> dict[str, dict]:
     return recs
 
 
+def prune(args) -> None:
+    """Odebere záznamy (a položky seznamu knih) pro knihy, jejichž adresář v knihovně už není –
+    po přejmenování/smazání na NASu. Jen stat cest, knihovna se neprochází. JSONL se přepíše atomicky."""
+    if not args.library.is_dir():
+        sys.exit(f"knihovna {args.library} není dostupná (NAS?) – prune by smazal všechno")
+    recs = load_records(args.out)
+    gone = sorted(b for b in recs if not (args.library / b).is_dir())
+    for b in gone:
+        print(f"odebírám: {b}", file=sys.stderr)
+    if gone:
+        tmp = args.out.with_suffix(".jsonl.tmp")
+        tmp.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for b, r in recs.items() if b not in gone))
+        tmp.replace(args.out)
+    if args.books_cache.exists():
+        cached = [l for l in args.books_cache.read_text().split("\n") if l.strip()]
+        keep = [l for l in cached if (args.library / l).is_dir()]
+        if len(keep) != len(cached):
+            args.books_cache.write_text("".join(f"{l}\n" for l in keep))
+            print(f"seznam knih: odebráno {len(cached) - len(keep)}", file=sys.stderr)
+    print(f"prune: odebráno {len(gone)} záznamů, zbývá {len(recs) - len(gone)}", file=sys.stderr)
+
+
 def export_json(jsonl: Path, out: Path) -> None:
     recs = sorted(load_records(jsonl).values(), key=lambda r: natural_key(Path(r["book"])))
     tmp = out.with_suffix(".json.tmp")
@@ -271,6 +294,8 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=ROOT / "data/intro-outro.jsonl")
     ap.add_argument("--json", type=Path, help="výsledný JSON (výchozí: --out s příponou .json)")
     ap.add_argument("--export-only", action="store_true", help="jen přegenerovat JSON z JSONL")
+    ap.add_argument("--prune", action="store_true",
+                    help="odebrat záznamy knih, jejichž adresář už neexistuje (přejmenování na NASu), a skončit")
     ap.add_argument("--workers", type=int, default=2,
                     help="souběžné knihy; GPU je jedna, víc vláken jen překrývá čtení z NASu a VAD (výchozí 2)")
     ap.add_argument("--limit", type=int, help="zpracovat nejvýš N knih a skončit")
@@ -281,6 +306,10 @@ def main() -> None:
     args = ap.parse_args()
     json_out = args.json or args.out.with_suffix(".json")
 
+    if args.prune:
+        prune(args)
+        export_json(args.out, json_out)
+        return
     if args.export_only:
         export_json(args.out, json_out)
         return
