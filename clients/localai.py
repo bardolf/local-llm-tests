@@ -14,9 +14,11 @@ Zkopíruj na server ke skriptům, nebo importuj přímo. Adresa: proměnná LOCA
     ai.normalize_authors(["SAPKOWSKI ANDRZEJ", ...])  # → {"SAPKOWSKI ANDRZEJ": "Andrzej Sapkowski", ...}
     img, hdr = ai.upscale("obalka.jpg", model="atd", width=1000)  # → bytes + {"X-Upscale-Model": …}
     ai.translate("A gripping thriller.")              # → "Napínavý thriller." (EN → CS, Hunyuan-MT)
+    png = ai.image("Book cover illustration, no text, …")  # → PNG bytes (Z-Image-Turbo, ~65 s)
 """
 from __future__ import annotations
 
+import base64
 import json
 import mimetypes
 import os
@@ -109,6 +111,14 @@ class LocalAI:
         body["texts" if isinstance(text, list) else "text"] = text
         r = self._post_json("/upstream/translate/translate", body)
         return r["translations"] if isinstance(text, list) else r["translation"]
+
+    # ---------- generování obrázků ----------
+    def image(self, prompt: str, size: str = "1024x1024", model: str = "image") -> bytes:
+        """Vygeneruje obrázek (Z-Image-Turbo přes stable-diffusion.cpp, ~65 s pro 1024²). Vrací PNG bytes.
+        Text v obrázku umí (i diakritiku), ale může ho zkomolit/zopakovat – zkontrolovat (vision) nebo vsadit dodatečně."""
+        body = {"model": model, "prompt": prompt, "size": size, "n": 1, "response_format": "b64_json"}
+        r = self._post_json("/v1/images/generations", body)
+        return base64.b64decode(r["data"][0]["b64_json"])
 
     # ---------- upscale obálek ----------
     def upscale(self, path: str | Path, model: str = "siax", width: int | None = None,

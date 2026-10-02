@@ -69,7 +69,8 @@ audioknihy. Další krok: reálná data z NASu.
      hlavně ověřit kategorii „nesedí autor“ (128 – podezření na plané poplachy),
   3. commit `desktop/data/covers.jsonl`, server pak zpracuje (kontaktní list podezřelých, oprava obálek).
 - [x] překlad EN → CS: služba `translate` (Hunyuan-MT výchozí), 2026-10-02.
-- [ ] (nápad) generování obrázků (stable-diffusion.cpp, SDXL / FLUX-schnell) – náhradní ilustrace pro knihy bez obálky.
+- [x] generování obrázků: Z-Image-Turbo přes stable-diffusion.cpp, model `image` (2026-10-02).
+  Další krok (nápad): náhradní ilustrace pro knihy bez obálky / s fotkou autora (covers.jsonl), nápis vsadit dodatečně.
 
 ## Nápady dál
 

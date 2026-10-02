@@ -78,6 +78,18 @@ curl -LO $B/4xBHI_dat2_real/4xBHI_dat2_real.safetensors
 curl -LO $B/4xNomosWebPhoto_atd/4xNomosWebPhoto_atd.safetensors
 ```
 
+## 4b. stable-diffusion.cpp (generování obrázků)
+
+```bash
+cd engines && git clone --depth 1 --recursive --shallow-submodules https://github.com/leejet/stable-diffusion.cpp.git
+cd stable-diffusion.cpp && cmake -S . -B build -G Ninja -DSD_VULKAN=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON -DGGML_CCACHE=ON && cmake --build build -j 20
+mkdir -p ../../models/image && cd ../../models/image
+curl -LO https://huggingface.co/leejet/Z-Image-Turbo-GGUF/resolve/main/z_image_turbo-Q4_K.gguf
+curl -LO https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+curl -LO https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors
+```
+
 ## 5. llama-swap (orchestrátor)
 
 ```bash

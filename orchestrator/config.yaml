@@ -101,6 +101,15 @@ models:
     cmd: ${svc}/chat/run.sh hunyuan-mt ${PORT}
     ttl: 600
 
+  # ---------- generování obrázků ----------
+  "z-image":
+    name: "Z-Image-Turbo Q4_K (stable-diffusion.cpp)"
+    description: "POST /v1/images/generations {prompt, size}; 1024² ~65 s, VRAM špička ~4.7 GB nad baseline"
+    cmd: ${svc}/image/run.sh ${PORT}
+    checkEndpoint: /
+    aliases: ["image"]
+    ttl: 300
+
   # ---------- upscale obálek ----------
   "upscale":
     name: "Upscale obálek (siax / atd / …)"
@@ -134,6 +143,7 @@ routing:
           tr: translate
           tg: translategemma
           hm: hunyuan-mt
+          img: z-image
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
@@ -144,3 +154,4 @@ routing:
           vision_fast: "vf & (e | e2) & up & tr"
           translation: "tg & tr & (e | e2) & w & up"
           translation_big: "hm & tr & (e | e2)"
+          image:      "img & tr & (e | e2)"

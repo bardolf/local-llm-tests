@@ -11,6 +11,7 @@
 #   ai translate "text" [model]    překlad EN → CS (hunyuan | translategemma); text "-" = ze stdin
 #   ai stt soubor.mp3 [format]     přepis (json|text|srt|vtt|verbose_json, výchozí text)
 #   ai upscale in.jpg out.jpg [model] [šířka]   zvětšit obálku (model siax | atd | …)
+#   ai image "prompt" out.png [velikost]          vygenerovat obrázek (Z-Image-Turbo, výchozí 1024x1024, ~65 s)
 #   ai logs [model]                živé logy
 set -euo pipefail
 URL="${AI_URL:-http://127.0.0.1:8100}"
@@ -72,11 +73,22 @@ req = urllib.request.Request(url + "/upstream/translate/translate", json.dumps(b
 print(json.load(urllib.request.urlopen(req, timeout=900))["translation"])
 PY
     ;;
+  image)
+    python3 - "$URL" "${1:?prompt}" "${2:?výstup.png}" "${3:-1024x1024}" <<'PY'
+import base64, json, sys, time, urllib.request
+url, prompt, out, size = sys.argv[1:]
+body = {"model": "image", "prompt": prompt, "size": size, "n": 1, "response_format": "b64_json"}
+t0 = time.time()
+r = json.load(urllib.request.urlopen(urllib.request.Request(url + "/v1/images/generations", json.dumps(body).encode(), {"Content-Type": "application/json"}), timeout=1800))
+open(out, "wb").write(base64.b64decode(r["data"][0]["b64_json"]))
+print(f"{out} ({time.time() - t0:.0f} s)")
+PY
+    ;;
   upscale)
     in="${1:?vstup}"; out="${2:?výstup}"; m="${3:-siax}"; w="${4:-}"
     curl -sf -D /dev/stderr -o "$out" "$URL/upstream/upscale/upscale" -F "file=@$in" -F "model=$m" ${w:+-F "width=$w"} \
       2> >(grep -i '^x-upscale' >&2) && echo "$out" ;;
   logs)
     curl -sfN "$URL/logs/stream${1:+/$1}" ;;
-  *) sed -n '2,16p' "$0"; exit 2 ;;
+  *) sed -n '2,17p' "$0"; exit 2 ;;
 esac
