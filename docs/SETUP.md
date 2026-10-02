@@ -88,6 +88,11 @@ mkdir -p ../../models/image && cd ../../models/image
 curl -LO https://huggingface.co/leejet/Z-Image-Turbo-GGUF/resolve/main/z_image_turbo-Q4_K.gguf
 curl -LO https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
 curl -LO https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors
+# úpravy obrázků (image-edit): FLUX.2-klein 4B + Qwen3-4B (base!) + VAE small-decoder (vše bez přihlášení)
+curl -LO https://huggingface.co/leejet/FLUX.2-klein-4B-GGUF/resolve/main/flux-2-klein-4b-Q8_0.gguf
+curl -LO https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf
+curl -L -o flux2_full_encoder_small_decoder.safetensors \
+  https://huggingface.co/black-forest-labs/FLUX.2-small-decoder/resolve/main/full_encoder_small_decoder.safetensors
 ```
 
 ## 5. llama-swap (orchestrátor)

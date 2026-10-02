@@ -120,6 +120,23 @@ class LocalAI:
         r = self._post_json("/v1/images/generations", body)
         return base64.b64decode(r["data"][0]["b64_json"])
 
+    def edit_image(self, path: str | Path, prompt: str, size: int = 768, seed: int | None = None) -> tuple[bytes, dict]:
+        """Upraví obrázek podle instrukce (FLUX.2-klein 4B), např. „Turn this photo into a comic book illustration
+        of the same person…“ (anglicky). ~50 s / 768 px. Vrací (PNG bytes, hlavičky X-Edit-*)."""
+        path = Path(path)
+        form = {"prompt": prompt, "size": size, **({"seed": seed} if seed is not None else {})}
+        boundary = uuid.uuid4().hex
+        parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+                 for k, v in form.items()]
+        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{path.name}"\r\n'
+                     f"Content-Type: {ctype}\r\n\r\n".encode() + path.read_bytes() + b"\r\n")
+        parts.append(f"--{boundary}--\r\n".encode())
+        req = urllib.request.Request(self.url + "/upstream/image-edit/edit", b"".join(parts),
+                                     {"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return r.read(), {k: v for k, v in r.headers.items() if k.lower().startswith("x-edit")}
+
     # ---------- upscale obálek ----------
     def upscale(self, path: str | Path, model: str = "siax", width: int | None = None,
                 fmt: str | None = None) -> tuple[bytes, dict]:

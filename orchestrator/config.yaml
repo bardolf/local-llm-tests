@@ -110,6 +110,13 @@ models:
     aliases: ["image"]
     ttl: 300
 
+  "image-edit":
+    name: "Úprava obrázku podle instrukce (FLUX.2-klein 4B)"
+    description: "POST /upstream/image-edit/edit (multipart file, prompt, size) → PNG; ~50 s / 768 px, VRAM ~5.5 GB během úpravy"
+    cmd: ${svc}/image/run-edit.sh ${PORT}
+    checkEndpoint: /health
+    ttl: 300
+
   # ---------- upscale obálek ----------
   "upscale":
     name: "Upscale obálek (siax / atd / …)"
@@ -144,6 +151,7 @@ routing:
           tg: translategemma
           hm: hunyuan-mt
           img: z-image
+          ie: image-edit
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
@@ -155,3 +163,4 @@ routing:
           translation: "tg & tr & (e | e2) & w & up"
           translation_big: "hm & tr & (e | e2)"
           image:      "img & tr & (e | e2)"
+          image_edit: "ie & tr"
