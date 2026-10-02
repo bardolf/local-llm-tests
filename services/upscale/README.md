@@ -29,6 +29,7 @@ v hlavičce `server.py` a v desktop README („Volání ze serveru“).
 - GPU zámek – požadavky se zpracují po jednom. Limit vstupu 2048 px (delší strana), upload 40 MB.
 - Naměřeno přes :8100: siax 342×600 → 1000×1754 **3.1 s** (studený start služby +0.3 s), atd 300×300
   **16 s** první (načtení modelu) / **8 s** dál. VRAM s načteným atd + whisper + embed = 2.9 GB celkem.
+- `min_side=1000` (kratší strana na 1000 px) – pro obálky; když je kratší strana už ≥ 1000, vrátí se beze změny.
 - Lokálně: `bin/ai upscale in.jpg out.jpg [model] [šířka]`.
 
 ## Naměřeno

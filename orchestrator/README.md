@@ -18,6 +18,8 @@ Request na jiný model, který se do VRAM nevejde spolu s ním, ho vystřídá.
 | `bge-m3` | `embed` | embeddingy 1024 dim | 15 min |
 | `qwen3-emb` | | embeddingy 1024 dim (alternativa) | 15 min |
 | `whisper` | `whisper-1` | přepis řeči | 15 min |
+| `qwen9b-vision` | `vision` | Qwen3.5 9B + mmproj – popis/OCR obrázků, běží sám (~6.5 GB) | 5 min |
+| `gemma4b-vision` | `vision-fast` | Gemma 4 E4B + mmproj – rychlejší, méně přesné OCR | 5 min |
 | `upscale` | | upscale obálek, HTTP služba `services/upscale/server.py` – volat `/upstream/upscale/upscale` | 5 min |
 
 ## Co může běžet současně (matrix router)
@@ -26,6 +28,8 @@ Request na jiný model, který se do VRAM nevejde spolu s ním, ho vystřídá.
 big_chat:   qwen9b & (bge-m3 | qwen3-emb)
 small_chat: (qwen4b | gemma4b) & (bge-m3 | qwen3-emb) & whisper & upscale
 audio:      whisper & (bge-m3 | qwen3-emb) & upscale
+vision:     qwen9b-vision                      (sám)
+vision_fast: gemma4b-vision & (bge-m3 | qwen3-emb) & upscale
 ```
 
 Tj. velký chat vyhodí whisper; malý chat, embed a whisper koexistují. Čísla VRAM:

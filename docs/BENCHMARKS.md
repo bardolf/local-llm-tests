@@ -98,3 +98,14 @@ Whisper paralelně nepomáhá (viz jobs/intro-outro/README.md).
 
 Qwen3.5 bez `--reasoning off` na jednoduchou otázku vygeneroval 5169 tokenů „přemýšlení“
 (4 min 37 s). Výchozí v `services/chat/run.sh` je proto off.
+
+## Vision – kontrola obálek (2026-10-02, `bench/cover_check.py`)
+
+3 malé obálky (300–354 px) + 1 podvržená (obálka jiné knihy). JSON schema: text, autor, název, popis, je obálka, sedí.
+
+| model | čas/obálka | VRAM celkem | OCR | popis | shoda/neshoda |
+|---|---|---|---|---|---|
+| **Qwen3.5 9B + mmproj F16** (`vision`) | 20–38 s | 7.7 GB (běží sám) | bez chyb („Hamerský“, „MOBA“, „KNIŽNÍ KLUB“) | věcný – „krysa v obleku“, „zlatý klíč, Karlův most“ | 4/4 ✓ |
+| Gemma 4 E4B + mmproj Q8 (`vision-fast`) | 16–19 s | 5.3 GB | drobné chyby („Hamský“, „VONDŘUSKA“, „MOB“) | povrchní – krysu označí za „portrét muže“ | 4/4 ✓ |
+
+Obě poznaly podvrženou obálku (Černý Petříček místo Mrtvého posla, Král Krysa místo R.U.R) se správným zdůvodněním.

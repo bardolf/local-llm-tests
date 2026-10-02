@@ -24,6 +24,7 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 | **chat** | Gemma 4 E4B (`chat`, ~43 tok/s) | rychlý chat, volný text | [services/chat](services/chat/) |
 | **chat-big** | Qwen3.5 9B (`chat-big`, ~16 tok/s) | přesná extrakce a normalizace jmen | [services/chat](services/chat/) |
 | **embed** | bge-m3 (1024 dim) | sémantické hledání, duplicity podle obsahu | [services/embed](services/embed/) |
+| **vision** | Qwen3.5 9B / Gemma 4 E4B + mmproj | popis a čtení textu z obrázku (kontrola obálek) | [services/chat](services/chat/) |
 | **upscale** | Siax (rychlý) / ATD (drobné písmo) + další | zvětšení malých obálek, HTTP i CLI | [services/upscale](services/upscale/) |
 | vad | Silero VAD (CPU) | hranice kapitol podle ticha | [services/vad](services/vad/) |
 | fingerprint | Chromaprint fpcalc (CPU) | stejná nahrávka v jiné verzi | [services/fingerprint](services/fingerprint/) |
@@ -48,7 +49,8 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
   JSON výstup přes `response_format: {"type":"json_schema",…}`. Embeddingy: `POST /v1/embeddings`, `model=embed`.
 - **Upscale obálek:** `POST /upstream/upscale/upscale`, multipart `file` (jpg/png), volitelně `model`
   (`siax` výchozí ~3 s | `atd` drobné písmo ~8–16 s | `remacri`, `lsdir`, `x4plus`, `drct`, `hat`, `dat2`),
-  `width` (cílová šířka; 4× AI a pak zmenšení), `format` (jpg|png, výchozí jako vstup), `quality`.
+  `width` (cílová šířka; 4× AI a pak zmenšení) **nebo `min_side`** (cílová kratší strana – obálky: `min_side=1000`),
+  `format` (jpg|png, výchozí jako vstup), `quality`.
   Odpověď = přímo obrázek, hlavičky `X-Upscale-Model`, `X-Upscale-Time-Ms`, `X-Upscale-Input`, `X-Upscale-Output`.
   Když je vstup už aspoň `width` široký, AI se přeskočí (`X-Upscale-Model: none`). Chyby: JSON `{"error": …}`.
   ```bash
@@ -56,6 +58,10 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
        -D hlavicky.txt -o cover_big.jpg
   ```
   `GET /upstream/upscale/models` – seznam modelů.
+- **Vision (popis/kontrola obrázku, např. obálky):** `POST /v1/chat/completions`, `model=vision` (Qwen3.5 9B –
+  přesné OCR i popis, ~20–40 s, ~6.5 GB → běží sám) nebo `vision-fast` (Gemma 4 E4B, ~17 s, drobné chyby v OCR).
+  Obrázek jako `{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,…"}}` v `content`. Vzor kontroly obálky
+  proti očekávanému autorovi/názvu (JSON schema): [bench/cover_check.py](bench/cover_check.py).
 - Python klient bez závislostí: [clients/localai.py](clients/localai.py) – `LocalAI("http://192.168.1.10:8100")`
   (`transcribe`, `chat`, `chat_json`, `embed`, `upscale`).
 - První požadavek po pauze o 1–2 s pomalejší (načtení modelu); nečinné modely se po 10–15 min uvolní.

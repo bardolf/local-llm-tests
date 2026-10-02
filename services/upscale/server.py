@@ -11,6 +11,8 @@ Formulář (multipart/form-data):
           drct | hat | dat2 – viz MODELS níže
   width   cílová šířka v px (volitelně). Obrázek se zvětší 4× a pak lanczos zmenší na `width`.
           Když je vstup už aspoň tak široký, AI se přeskočí a jen se zmenší/vrátí (model „none“).
+  min_side cílová velikost KRATŠÍ strany v px (volitelně, místo width; obálky: min_side=1000).
+          Když je kratší strana už aspoň tolik, vrátí se obrázek beze změny rozměru (model „none“).
   format  jpg | png (výchozí: stejný jako vstup)
   quality kvalita JPEG 1–100 (výchozí 92)
 
@@ -103,7 +105,8 @@ def upscale_torch(img: Image.Image, spec) -> Image.Image:
     return Image.fromarray(res)
 
 
-def process(data: bytes, model: str, width: int | None, fmt: str | None, quality: int) -> tuple[bytes, dict]:
+def process(data: bytes, model: str, width: int | None, fmt: str | None, quality: int,
+            min_side: int | None = None) -> tuple[bytes, dict]:
     t0 = time.time()
     img = Image.open(io.BytesIO(data))
     in_fmt = (img.format or "PNG").upper()
@@ -112,15 +115,26 @@ def process(data: bytes, model: str, width: int | None, fmt: str | None, quality
     if max(w, h) > MAX_INPUT_SIDE:
         raise ValueError(413, f"vstup {w}×{h} je větší než {MAX_INPUT_SIDE} px – to není malá obálka")
     used = model
-    if width and w >= width:
-        out = img if w == width else img.resize((width, round(h * width / w)), Image.LANCZOS)
+
+    def fit(im: Image.Image) -> Image.Image:
+        """Zmenšit/zvětšit lanczosem na cílovou šířku nebo kratší stranu."""
+        if min_side:
+            k = min_side / min(im.size)
+        elif width:
+            k = width / im.width
+        else:
+            return im
+        size = (round(im.width * k), round(im.height * k))
+        return im if size == im.size else im.resize(size, Image.LANCZOS)
+
+    if (min_side and min(w, h) >= min_side) or (not min_side and width and w >= width):
+        out = img if min_side else fit(img)   # už dost velký → bez AI (min_side: rozměr nechat)
         used = "none"
     else:
         spec = MODELS[model]
         with GPU_LOCK:
             out = upscale_ncnn(img, spec) if spec[0] == "ncnn" else upscale_torch(img, spec)
-        if width and out.width != width:
-            out = out.resize((width, round(out.height * width / out.width)), Image.LANCZOS)
+        out = fit(out)
     fmt = (fmt or ("jpg" if in_fmt in ("JPEG", "JPG") else "png")).lower()
     buf = io.BytesIO()
     if fmt in ("jpg", "jpeg"):
@@ -185,7 +199,8 @@ class Handler(BaseHTTPRequestHandler):
             width = int(width) if width else None
             fmt = f.get("format", (b"",))[0].decode().strip() or None
             quality = int(f.get("quality", (b"92",))[0].decode().strip() or 92)
-            data, meta = process(f["file"][0], model, width, fmt, quality)
+            ms = f.get("min_side", (b"",))[0].decode().strip()
+            data, meta = process(f["file"][0], model, width, fmt, quality, int(ms) if ms else None)
         except ValueError as e:
             code, msg = e.args if len(e.args) == 2 and isinstance(e.args[0], int) else (400, str(e))
             return self._json(code, {"error": msg})

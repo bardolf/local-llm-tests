@@ -39,6 +39,21 @@ models:
     aliases: ["chat"]
     ttl: 600
 
+  # ---------- vision (popis/kontrola obrázků, např. obálek) ----------
+  "qwen9b-vision":
+    name: "Qwen3.5 9B + vision"
+    description: "Kontrola obálek: OCR bez chyb, věcný popis; ~20–40 s, ~6.5 GB → běží sám"
+    cmd: ${svc}/chat/run.sh qwen9b-vision ${PORT}
+    aliases: ["vision"]
+    ttl: 300
+
+  "gemma4b-vision":
+    name: "Gemma 4 E4B + vision"
+    description: "Rychlejší kontrola obálek (~17 s, ~4 GB); OCR s drobnými chybami, popis méně přesný"
+    cmd: ${svc}/chat/run.sh gemma4b-vision ${PORT}
+    aliases: ["vision-fast"]
+    ttl: 300
+
   # ---------- embeddingy ----------
   "bge-m3":
     name: "BGE-M3 Q8_0 (1024 dim)"
@@ -86,9 +101,13 @@ routing:
           e2: qwen3-emb
           w:  whisper
           up: upscale
+          v:  qwen9b-vision
+          vf: gemma4b-vision
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
           big_chat:   "q9 & (e | e2)"
           small_chat: "(q4 | g4) & (e | e2) & w & up"
           audio:      "w & (e | e2) & up"
+          vision:     "v"
+          vision_fast: "vf & (e | e2) & up"
