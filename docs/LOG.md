@@ -126,3 +126,4 @@
   Ověřeno s odsunutým symlinkem: smoke 7/7, torch-sr (GPU), intro-outro export OK. Symlink zatím vrácen;
   smazat lze `rm ~/projects/llm` (venv torch-sr: volat `bin/python -m pip`, ne `bin/pip`).
 - Symlink `~/projects/llm` smazán; projekt běží jen z `~/projects/audiobooksprocessing/desktop`.
+- `desktop/data/intro-outro.jsonl` (2254 knih, 12 chyb – opakovaný běh zatím nespuštěn) přidán do gitu; `.gitignore`: `data/` → `**/data/*` + výjimka pro tento soubor.

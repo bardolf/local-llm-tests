@@ -60,7 +60,9 @@ přidá ID3 tagy 1. souboru (`probe_first`), odfiltruje halucinace, označí `su
   / po Ctrl+C). Klíč `book` = cesta relativně ke kořeni knihovny. Formát: `jobs/intro-outro/README.md`.
 - Navazuje (hotové přeskočí, chybné zkusí znovu). ~5 s/kniha ve 2 vláknech; 2254 knih ≈ 3–4 h.
   **Běh celé knihovny spuštěn 2026-10-01.**
-- Stažení výsledků na server: `./sync.sh` → `../data/transcripts/`.
+- **`desktop/data/intro-outro.jsonl` je v gitu** (jediný soubor z `data/`, viz `.gitignore`) → na serveru stačí
+  `git pull`. `intro-outro.json` lze kdykoli vygenerovat `transcribe_intro_outro.py --export-only`.
+  Alternativně `./sync.sh` → `../data/transcripts/` (bez gitu, přímo z desktopu).
 
 ### Nové knihy – přepis je potřeba VYTVOŘIT
 
