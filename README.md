@@ -30,8 +30,24 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 
 Serverové služby (whisper, chat, embed) spouští **orchestrátor llama-swap** na portu **8100** podle pole
 `model` v requestu; co se nevejde do VRAM, vystřídá, nečinné po 10–15 min uvolní
-([orchestrator/](orchestrator/)). Backendy poslouchají jen na `127.0.0.1`; port 8100 je ve firewallu
-zatím zavřený – výsledky se nosí jako soubory (viz níže).
+([orchestrator/](orchestrator/)). Backendy poslouchají jen na `127.0.0.1`; port **8100 je ve firewallu
+otevřený jen pro NAS 192.168.1.11** → ze serveru `http://192.168.1.10:8100` (OpenAI API).
+
+### Volání ze serveru
+
+```bash
+curl -s http://192.168.1.10:8100/health                       # desktop vzhůru? (jinak probudit desktop-on-off)
+curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
+  -F model=whisper -F file=@klip.mp3 -F language=cs \
+  -F prompt="Autor, Název, Vypravěč" -F response_format=verbose_json   # text | json | srt | vtt
+```
+
+- `language=auto` pro neznámý jazyk (slovenské knihy); `prompt` = nápověda jmen, výrazně zlepší přepis jmen.
+- Posílat krátké klipy (např. `server/import/clips.py`), ne celé knihy. Formát libovolný (server převádí ffmpegem).
+- Chat: `POST /v1/chat/completions` s `model=chat` (Gemma 4, rychlý) / `chat-big` (Qwen3.5 9B, přesnější extrakce),
+  JSON výstup přes `response_format: {"type":"json_schema",…}`. Embeddingy: `POST /v1/embeddings`, `model=embed`.
+- Python klient bez závislostí: [clients/localai.py](clients/localai.py) – `LocalAI("http://192.168.1.10:8100")`.
+- První požadavek po pauze o 1–2 s pomalejší (načtení modelu); nečinné modely se po 10–15 min uvolní.
 
 ```bash
 cd ~/projects/audiobooksprocessing/desktop

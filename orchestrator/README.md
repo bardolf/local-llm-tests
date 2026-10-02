@@ -68,13 +68,16 @@ sudo loginctl enable-linger milan  # aby běžel po bootu i bez přihlášení
 
 ## Přístup ze sítě
 
-Služba poslouchá na `0.0.0.0:8100`, ale firewalld (zóna public) port **zatím nepouští**.
-Po potvrzení zdrojové IP (pravděpodobně NAS 192.168.1.11, stejně jako lc0/stockfish):
+Služba poslouchá na `0.0.0.0:8100`; firewalld (zóna public) pouští port **jen z NASu 192.168.1.11**
+(od 2026-10-02, stejně jako lc0/stockfish), odjinud zavřeno. API klíč není.
 
 ```bash
 sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.1.11" port port="8100" protocol="tcp" accept'
 sudo firewall-cmd --reload
+sudo firewall-cmd --list-rich-rules           # kontrola
 ```
+
+Ověřeno z NASu: `/health` 200, přepis klipu přes `/v1/audio/transcriptions` OK.
 
 ## Sdílení GPU s lc0
 

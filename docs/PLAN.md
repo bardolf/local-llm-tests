@@ -52,8 +52,7 @@ audioknihy. Další krok: reálná data z NASu.
 
 ## Otevřené otázky (pro Milana)
 
-1. **Odkud se bude volat?** Firewall má rich rules pro 192.168.1.11 (NAS, lc0/stockfish).
-   Je to i stroj s audioknihovnou? Pak otevřít 8100 jen pro něj (příkaz v orchestrator/README).
+1. ✅ Volá se z NASu 192.168.1.11 – port 8100 otevřen jen pro něj (2026-10-02).
 2. **Běh po bootu bez přihlášení?** Služba je nainstalovaná a enabled; pro start bez
    přihlášení chybí `sudo loginctl enable-linger milan`.
 3. **lc0 sdílí GPU** – má mít přednost? Pak před partií uvolnit modely (`bin/ai unload`),
