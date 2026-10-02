@@ -21,6 +21,9 @@ Request na jiný model, který se do VRAM nevejde spolu s ním, ho vystřídá.
 | `whisper` | `whisper-1` | přepis řeči | 15 min |
 | `qwen9b-vision` | `vision` | Qwen3.5 9B + mmproj – popis/OCR obrázků, běží sám (~6.5 GB) | 5 min |
 | `gemma4b-vision` | `vision-fast` | Gemma 4 E4B + mmproj – rychlejší, méně přesné OCR | 5 min |
+| `translate` | | služba překladu (CPU) – volat `/upstream/translate/translate` | 15 min |
+| `hunyuan-mt` | | Hunyuan-MT 7B – výchozí překladový model (~5.4 GB) | 10 min |
+| `translategemma` | | TranslateGemma 4B – rychlejší/menší překlad | 10 min |
 | `upscale` | | upscale obálek, HTTP služba `services/upscale/server.py` – volat `/upstream/upscale/upscale` | 5 min |
 
 ## Co může běžet současně (matrix router)

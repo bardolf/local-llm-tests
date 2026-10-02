@@ -8,6 +8,7 @@
 #   ai chat [model] "dotaz"        jednorázový dotaz (výchozí model: chat = gemma4b)
 #   ai talk [model] [-s "systém"]   konverzace s historií (výchozí chat-long, 64k kontext)
 #   ai embed "text" ["text2"…]     vrátí JSON s embeddingy (bge-m3)
+#   ai translate "text" [model]    překlad EN → CS (hunyuan | translategemma); text "-" = ze stdin
 #   ai stt soubor.mp3 [format]     přepis (json|text|srt|vtt|verbose_json, výchozí text)
 #   ai upscale in.jpg out.jpg [model] [šířka]   zvětšit obálku (model siax | atd | …)
 #   ai logs [model]                živé logy
@@ -61,11 +62,21 @@ PY
   stt)
     f="${1:?soubor}"; fmt="${2:-text}"
     curl -sf "$URL/v1/audio/transcriptions" -F model=whisper -F "file=@$f" -F "response_format=$fmt" ;;
+  translate)
+    t="${1:?text}"; [[ "$t" == "-" ]] && t="$(cat)"
+    python3 - "$URL" "$t" "${2:-}" <<'PY'
+import json, sys, urllib.request
+url, text, model = sys.argv[1:]
+body = {"text": text, **({"model": model} if model else {})}
+req = urllib.request.Request(url + "/upstream/translate/translate", json.dumps(body).encode(), {"Content-Type": "application/json"})
+print(json.load(urllib.request.urlopen(req, timeout=900))["translation"])
+PY
+    ;;
   upscale)
     in="${1:?vstup}"; out="${2:?výstup}"; m="${3:-siax}"; w="${4:-}"
     curl -sf -D /dev/stderr -o "$out" "$URL/upstream/upscale/upscale" -F "file=@$in" -F "model=$m" ${w:+-F "width=$w"} \
       2> >(grep -i '^x-upscale' >&2) && echo "$out" ;;
   logs)
     curl -sfN "$URL/logs/stream${1:+/$1}" ;;
-  *) sed -n '2,15p' "$0"; exit 2 ;;
+  *) sed -n '2,16p' "$0"; exit 2 ;;
 esac

@@ -109,3 +109,14 @@ Qwen3.5 bez `--reasoning off` na jednoduchou otázku vygeneroval 5169 tokenů �
 | Gemma 4 E4B + mmproj Q8 (`vision-fast`) | 16–19 s | 5.3 GB | drobné chyby („Hamský“, „VONDŘUSKA“, „MOB“) | povrchní – krysu označí za „portrét muže“ | 4/4 ✓ |
 
 Obě poznaly podvrženou obálku (Černý Petříček místo Mrtvého posla, Král Krysa místo R.U.R) se správným zdůvodněním.
+
+## Překlad EN → CS (2026-10-02, `bench/translate_eval.py`, texty v `bench/results/translate-20261002.md`)
+
+| model | tok/s | VRAM | anotace | metadata | literatura (Holmes) | dialog (idiomy) |
+|---|---|---|---|---|---|---|
+| **Hunyuan-MT 7B** Q4_K_M | 42 | ~5.4 GB | dobrá, „o viny“, neobratný slovosled | ✓ „Vypráví Jim Dale… Třetí díl“ | **výborná** | ✓ „obrátila oči v sloup“ |
+| TranslateGemma 4B Q6_K | 56 | ~3.2 GB | dobrá, „staré tajemství“, „o vinen“ | ✓ | dobrá | ✗ „Musíte mě špatně pochopit“, „zamračila se“ |
+| Gemma 4 E4B (obecná) | 60 | – | „vynoržuje“ | ✗ „Knihynka 3“ | ✗ azbuka, obrácený smysl | ~ |
+
+→ výchozí `hunyuan`; TranslateGemma navíc přidává slova („Book two of the trilogy.“ → „Koupit druhou knihu…“).
+TranslateGemma 12B (7.3 GB Q4) se s desktopem do 8 GB nevejde.

@@ -61,6 +61,16 @@ audioknihy. Další krok: reálná data z NASu.
    Na Qwen3.5 brzdí Vulkan kernel; větší Gemma 4 12B (6.7 GB) se do 8 GB s desktopem nevejde.
 5. ✅ Knihovna zpřístupněna (/media/disks/disk3/audio/spoken), job `jobs/intro-outro` otestován na 5 knihách.
 
+## Rozpracované úkoly (TODO)
+
+- [ ] **covers – dokončit kontrolu obálek** (domluveno 2026-10-02):
+  1. `jobs/covers/describe_covers.py` znovu → zkusí 13 obálek s chybou,
+  2. `jobs/covers/describe_covers.py --model vision --only-suspect` → Qwen 9B nad 653 podezřelými (~4.4 h, přes noc),
+     hlavně ověřit kategorii „nesedí autor“ (128 – podezření na plané poplachy),
+  3. commit `desktop/data/covers.jsonl`, server pak zpracuje (kontaktní list podezřelých, oprava obálek).
+- [x] překlad EN → CS: služba `translate` (Hunyuan-MT výchozí), 2026-10-02.
+- [ ] (nápad) generování obrázků (stable-diffusion.cpp, SDXL / FLUX-schnell) – náhradní ilustrace pro knihy bez obálky.
+
 ## Nápady dál
 
 - Pipeline „nová kniha“: fpcalc (duplicita?) → whisper prvních 60 s → chat extrakce

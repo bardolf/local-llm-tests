@@ -25,6 +25,7 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 | chat-long | Gemma 4 E4B, 1 slot, 64k kontext | dlouhé konverzace (`bin/ai talk`, web chat) | [services/chat](services/chat/) |
 | **chat-big** | Qwen3.5 9B (`chat-big`, ~16 tok/s) | přesná extrakce a normalizace jmen | [services/chat](services/chat/) |
 | **embed** | bge-m3 (1024 dim) | sémantické hledání, duplicity podle obsahu | [services/embed](services/embed/) |
+| **translate** | Hunyuan-MT 7B / TranslateGemma 4B | překlad EN → CS (služba skládá prompt) | [services/translate](services/translate/) |
 | **vision** | Qwen3.5 9B / Gemma 4 E4B + mmproj | popis a čtení textu z obrázku (kontrola obálek) | [services/chat](services/chat/) |
 | **upscale** | Siax (rychlý) / ATD (drobné písmo) + další | zvětšení malých obálek, HTTP i CLI | [services/upscale](services/upscale/) |
 | vad | Silero VAD (CPU) | hranice kapitol podle ticha | [services/vad](services/vad/) |
@@ -63,6 +64,9 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
   přesné OCR i popis, ~20–40 s, ~6.5 GB → běží sám) nebo `vision-fast` (Gemma 4 E4B, ~17 s, drobné chyby v OCR).
   Obrázek jako `{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,…"}}` v `content`. Vzor kontroly obálky
   proti očekávanému autorovi/názvu (JSON schema): [bench/cover_check.py](bench/cover_check.py).
+- **Překlad:** `POST /upstream/translate/translate` s JSON `{"text": "…", "source": "en", "target": "cs"}`
+  (nebo `"texts": [...]`, volitelně `"model": "hunyuan" | "translategemma"`) → `{"translation": "…", "model", "ms"}`.
+  Výchozí Hunyuan-MT 7B (nejlepší kvalita), odstavce se zachovají. Detail: [services/translate](services/translate/).
 - **Konverzace:** server si historii nepamatuje – klient posílá celou historii v `messages`. Web chat s historií:
   `http://127.0.0.1:8100/upstream/chat-long/` (na desktopu; jiný model = jiný název v cestě), terminál: `bin/ai talk`.
   Kontext: `chat` 8k tokenů na konverzaci (4 sloty), `chat-long` 64k. Pozor: malé modely mají slabé znalosti

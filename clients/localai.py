@@ -13,6 +13,7 @@ Zkopíruj na server ke skriptům, nebo importuj přímo. Adresa: proměnná LOCA
                                                       #   (tip: přepis dělat s prompt="autor, název, vypravěč…" z metadat)
     ai.normalize_authors(["SAPKOWSKI ANDRZEJ", ...])  # → {"SAPKOWSKI ANDRZEJ": "Andrzej Sapkowski", ...}
     img, hdr = ai.upscale("obalka.jpg", model="atd", width=1000)  # → bytes + {"X-Upscale-Model": …}
+    ai.translate("A gripping thriller.")              # → "Napínavý thriller." (EN → CS, Hunyuan-MT)
 """
 from __future__ import annotations
 
@@ -98,6 +99,16 @@ class LocalAI:
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
             body = r.read().decode()
         return json.loads(body) if fmt in ("json", "verbose_json") else body
+
+    # ---------- překlad ----------
+    def translate(self, text: str | list[str], source: str = "en", target: str = "cs",
+                  model: str | None = None) -> str | list[str]:
+        """Překlad přes službu `translate` (prompt pro překladový model skládá služba).
+        model: hunyuan (výchozí, nejlepší) | translategemma (rychlejší, menší) | gemma. Odstavce se zachovají."""
+        body = {"source": source, "target": target, **({"model": model} if model else {})}
+        body["texts" if isinstance(text, list) else "text"] = text
+        r = self._post_json("/upstream/translate/translate", body)
+        return r["translations"] if isinstance(text, list) else r["translation"]
 
     # ---------- upscale obálek ----------
     def upscale(self, path: str | Path, model: str = "siax", width: int | None = None,

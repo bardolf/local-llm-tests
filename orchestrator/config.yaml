@@ -81,6 +81,26 @@ models:
     aliases: ["whisper-1"]   # výchozí jméno v OpenAI klientech
     ttl: 900
 
+  # ---------- překlad ----------
+  "translate":
+    name: "Překlad (služba) – POST /upstream/translate/translate {text, source, target}"
+    description: "Skládá prompt pro překladový model; sama GPU nepoužívá"
+    cmd: ${svc}/translate/run.sh ${PORT}
+    checkEndpoint: /health
+    ttl: 900
+
+  "translategemma":
+    name: "TranslateGemma 4B Q6_K"
+    description: "Google, překladový model (55 jazyků); volat přes službu translate"
+    cmd: ${svc}/chat/run.sh translategemma ${PORT}
+    ttl: 600
+
+  "hunyuan-mt":
+    name: "Hunyuan-MT 7B Q4_K_M"
+    description: "Tencent, vítěz WMT25; volat přes službu translate"
+    cmd: ${svc}/chat/run.sh hunyuan-mt ${PORT}
+    ttl: 600
+
   # ---------- upscale obálek ----------
   "upscale":
     name: "Upscale obálek (siax / atd / …)"
@@ -111,11 +131,16 @@ routing:
           up: upscale
           v:  qwen9b-vision
           vf: gemma4b-vision
+          tr: translate
+          tg: translategemma
+          hm: hunyuan-mt
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
-          big_chat:   "q9 & (e | e2)"
-          small_chat: "(q4 | g4 | gl) & (e | e2) & w & up"
-          audio:      "w & (e | e2) & up"
-          vision:     "v"
-          vision_fast: "vf & (e | e2) & up"
+          big_chat:   "q9 & (e | e2) & tr"
+          small_chat: "(q4 | g4 | gl) & (e | e2) & w & up & tr"
+          audio:      "w & (e | e2) & up & tr"
+          vision:     "v & tr"
+          vision_fast: "vf & (e | e2) & up & tr"
+          translation: "tg & tr & (e | e2) & w & up"
+          translation_big: "hm & tr & (e | e2)"
