@@ -46,16 +46,16 @@ COVER_NAMES = ("cover.jpg", "cover.jpeg", "cover.png", "folder.jpg")
 SEND_MAX_SIDE = 1024          # vision enkodér obrázek stejně zmenší; menší upload a méně tokenů
 
 SCHEMA = {"type": "object", "properties": {
-    "text_na_obalce": {"type": "string"},
+    "text_na_obalce": {"type": "string", "maxLength": 700},
     "autor_na_obalce": {"type": ["string", "null"]},
     "nazev_na_obalce": {"type": ["string", "null"]},
-    "popis": {"type": "string"},
+    "popis": {"type": "string", "maxLength": 900},
     "typ": {"type": "string", "enum": ["obalka_audioknihy", "obalka_knihy", "fotka_autora", "zastupny_obrazek",
                                         "jiny_obrazek"]},
     "sedi_autor": {"type": "boolean"},
     "sedi_nazev": {"type": "boolean"},
     "jistota": {"type": "string", "enum": ["vysoka", "stredni", "nizka"]},
-    "duvod": {"type": "string"}},
+    "duvod": {"type": "string", "maxLength": 300}},
     "required": ["text_na_obalce", "autor_na_obalce", "nazev_na_obalce", "popis", "typ", "sedi_autor",
                  "sedi_nazev", "jistota", "duvod"]}
 
@@ -148,11 +148,24 @@ def latest_per_book(recs: dict[tuple, dict], model: str | None = None) -> dict[s
 
 
 def export_json(jsonl: Path, out: Path) -> None:
-    recs = sorted(load_records(jsonl).values(), key=lambda r: (natural_key(r["book"]), r["model"]))
+    # jen nejnovější záznam pro (kniha, model) – starší (chyba, předchozí verze obálky) v JSONL zůstávají jako historie
+    latest: dict[tuple, dict] = {}
+    for r in load_records(jsonl).values():
+        k = (r["book"], r["model"])
+        if k not in latest or r.get("at", "") > latest[k].get("at", ""):
+            latest[k] = r
+    recs = sorted(latest.values(), key=lambda r: (natural_key(r["book"]), r["model"]))
     tmp = out.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(recs, ensure_ascii=False))
     tmp.replace(out)
     print(f"export: {len(recs)} záznamů → {out}", file=sys.stderr)
+
+
+class BadOutput(Exception):
+    """Model vrátil nevalidní JSON – nese surovou odpověď do záznamu (pro diagnostiku)."""
+    def __init__(self, msg: str, raw: str):
+        super().__init__(msg)
+        self.raw = raw
 
 
 # ---------- jádro ----------
@@ -169,7 +182,9 @@ def describe(url: str, model: str, book: str, cover: Path) -> dict:
     img.save(buf, "JPEG", quality=90)
     exp = expected(book)
     serie = f", série „{exp['serie']}“" if exp["serie"] else ""
-    body = {"model": model, "temperature": 0.1, "max_tokens": 900,
+    # maxLength ve schématu + mírná penalizace opakování: dřív se model u obálek s hodně textem (Bible…) zacyklil
+    # v text_na_obalce a odpověď se useknula na max_tokens → nevalidní JSON
+    body = {"model": model, "temperature": 0.1, "max_tokens": 1600, "repeat_penalty": 1.1,
             "messages": [{"role": "user", "content": [
                 {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()}},
                 {"type": "text", "text": PROMPT.format(autor=exp["autor"], nazev=exp["nazev"], serie=serie)}]}],
@@ -179,7 +194,10 @@ def describe(url: str, model: str, book: str, cover: Path) -> dict:
                                  {"Content-Type": "application/json"})
     resp = json.load(urllib.request.urlopen(req, timeout=900))
     content = resp["choices"][0]["message"]["content"]
-    v = json.loads(content)
+    try:
+        v = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise BadOutput(f"{e} (odpověď {len(content)} znaků, konec: …{content[-120:]!r})", content) from e
     tm = resp.get("timings", {})
     # vision = odpověď modelu (rozparsovaný JSON, popis atd. beze změny), raw = přesně text, jak ho model vrátil
     return {"cover": cover.name, "md5": md5, "size": [w, h], "bytes": len(raw), "expected": exp, "vision": v,
@@ -264,6 +282,9 @@ def main() -> None:
                 rec.update({"cover": None, "md5": None, "note": "bez obálky"})
             else:
                 rec.update(describe(args.url, args.model, book, cover))
+        except BadOutput as e:
+            rec["error"] = f"BadOutput: {e}"
+            rec["raw"] = e.raw
         except Exception as e:  # noqa: BLE001 – jedna vadná obálka nesmí zastavit dávku
             rec["error"] = f"{type(e).__name__}: {e}"
         rec["took_s"] = round(time.time() - t0, 1)
