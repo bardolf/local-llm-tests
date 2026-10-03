@@ -63,14 +63,16 @@ audioknihy. Další krok: reálná data z NASu.
 
 ## Rozpracované úkoly (TODO)
 
-- [ ] **covers – dokončit kontrolu obálek** (domluveno 2026-10-02):
+- [x] **covers – kontrola obálek** (desktop hotovo 2026-10-03; zpracování výsledků je na serveru):
   1. ✅ chyby opraveny (2026-10-02, 0 chyb, 644 podezřelých),
   2. ✅ Qwen 9B nad 644 podezřelými hotovo (2026-10-02): 616 potvrzeno, 28 v pořádku, 0 chyb,
-     hlavně ověřit kategorii „nesedí autor“ (128 – podezření na plané poplachy),
   3. ✅ commit `desktop/data/covers.jsonl` → **na řadě server**: kontaktní list podezřelých, oprava obálek.
 - [x] překlad EN → CS: služba `translate` (Hunyuan-MT výchozí), 2026-10-02.
 - [x] generování obrázků: Z-Image-Turbo přes stable-diffusion.cpp, model `image` (2026-10-02).
   Další krok (nápad): náhradní ilustrace pro knihy bez obálky / s fotkou autora (covers.jsonl), nápis vsadit dodatečně.
+- [x] úprava obrázku podle instrukce (FLUX.2-klein, `image-edit`), 2026-10-02.
+- [x] rozpoznání jazyka audio stopy filmů (`langid`), 2026-10-03.
+- [x] dlouhá konverzace (`chat-long`, `bin/ai talk`), vision kontrola obálek, upscale `min_side`.
 
 ## Nápady dál
 
