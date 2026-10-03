@@ -53,7 +53,7 @@ audioknihy. Další krok: reálná data z NASu.
 ## Otevřené otázky (pro Milana)
 
 1. ✅ Volá se z NASu 192.168.1.11 – port 8100 otevřen jen pro něj (2026-10-02).
-2. **Běh po bootu bez přihlášení?** Služba je nainstalovaná a enabled; pro start bez
+2. ✅ Běh po bootu bez přihlášení: `loginctl enable-linger milan` (2026-10-03). (původně: Služba je nainstalovaná a enabled; pro start bez
    přihlášení chybí `sudo loginctl enable-linger milan`.
 3. **lc0 sdílí GPU** – má mít přednost? Pak před partií uvolnit modely (`bin/ai unload`),
    případně hook v lc0 service.

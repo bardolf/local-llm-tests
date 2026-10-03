@@ -68,7 +68,10 @@ GET  /upstream/<id>/health       načíst model (blokuje do připravenosti)
 
 ## Instalace jako služba
 
-**Stav: nainstalováno a běží** (`systemctl --user status llama-swap`), linger zatím vypnutý.
+**Stav: nainstalováno a běží** (`systemctl --user status llama-swap`), **linger zapnutý** (2026-10-03) →
+běží od bootu i bez přihlášení (desktop přihlašuje SDDM bez autologinu, probouzí se přes WoL).
+Nečinný orchestrátor: ~0 % CPU, ~83 MB RAM, 0 VRAM (modely se uvolní po TTL; „MemoryCurrent“ ~20 GB v systemd
+je jen diskcache souborů modelů – uvolnitelná).
 
 ```bash
 orchestrator/install.sh            # ~/.config/systemd/user/llama-swap.service → symlink
