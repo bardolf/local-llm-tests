@@ -28,6 +28,7 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 | **translate** | Hunyuan-MT 7B / TranslateGemma 4B | překlad EN → CS (služba skládá prompt) | [services/translate](services/translate/) |
 | **image** | Z-Image-Turbo (stable-diffusion.cpp) | generování obrázků, ~65 s / 1024² | [services/image](services/image/) |
 | **image-edit** | FLUX.2-klein 4B | úprava fotky podle instrukce (komiks, akvarel…), ~50 s | [services/image](services/image/) |
+| **langid** | Whisper + VAD (služba) | jazyk audio stopy filmu (ISO 639-1/2, jistota) | [services/langid](services/langid/) |
 | **vision** | Qwen3.5 9B / Gemma 4 E4B + mmproj | popis a čtení textu z obrázku (kontrola obálek) | [services/chat](services/chat/) |
 | **upscale** | Siax (rychlý) / ATD (drobné písmo) + další | zvětšení malých obálek, HTTP i CLI | [services/upscale](services/upscale/) |
 | vad | Silero VAD (CPU) | hranice kapitol podle ticha | [services/vad](services/vad/) |
@@ -76,6 +77,9 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
 - **Úprava obrázku podle instrukce** (fotka → komiks, akvarel, kresba…): `POST /upstream/image-edit/edit`, multipart
   `file`, `prompt` (anglicky), `size` (delší strana, výchozí 768) → PNG + hlavičky `X-Edit-*`; ~50 s (768 px),
   ~25 s (512 px). FLUX.2-klein 4B, osoba se zachová.
+- **Jazyk audio stopy (filmy):** `POST /upstream/langid/detect`, multipart `file` (víckrát – klipy ~30 s z různých
+  míst stopy) → `{"language": "cs", "iso639_2": "cze", "confidence": …, "uncertain": …, "reason": …}`; ~2–7 s.
+  Detail a jak vystřihnout klipy z MKV: [services/langid](services/langid/).
 - **Konverzace:** server si historii nepamatuje – klient posílá celou historii v `messages`. Web chat s historií:
   `http://127.0.0.1:8100/upstream/chat-long/` (na desktopu; jiný model = jiný název v cestě), terminál: `bin/ai talk`.
   Kontext: `chat` 8k tokenů na konverzaci (4 sloty), `chat-long` 64k. Pozor: malé modely mají slabé znalosti

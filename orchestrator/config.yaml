@@ -117,6 +117,14 @@ models:
     checkEndpoint: /health
     ttl: 300
 
+  # ---------- rozpoznání jazyka audio stopy ----------
+  "langid":
+    name: "Rozpoznání jazyka audio stopy (služba)"
+    description: "POST /upstream/langid/detect (multipart file, víckrát) → jazyk, ISO 639-1/2, jistota; volá whisper"
+    cmd: ${svc}/langid/run.sh ${PORT}
+    checkEndpoint: /health
+    ttl: 900
+
   # ---------- upscale obálek ----------
   "upscale":
     name: "Upscale obálek (siax / atd / …)"
@@ -148,6 +156,7 @@ routing:
           v:  qwen9b-vision
           vf: gemma4b-vision
           tr: translate
+          lid: langid
           tg: translategemma
           hm: hunyuan-mt
           img: z-image
@@ -155,12 +164,12 @@ routing:
         evict_costs:
           q9: 3      # nejpomalejší start
         sets:
-          big_chat:   "q9 & (e | e2) & tr"
-          small_chat: "(q4 | g4 | gl) & (e | e2) & w & up & tr"
-          audio:      "w & (e | e2) & up & tr"
-          vision:     "v & tr"
-          vision_fast: "vf & (e | e2) & up & tr"
-          translation: "tg & tr & (e | e2) & w & up"
-          translation_big: "hm & tr & (e | e2)"
-          image:      "img & tr & (e | e2)"
-          image_edit: "ie & tr"
+          big_chat:   "q9 & (e | e2) & tr & lid"
+          small_chat: "(q4 | g4 | gl) & (e | e2) & w & up & tr & lid"
+          audio:      "w & (e | e2) & up & tr & lid"
+          vision:     "v & tr & lid"
+          vision_fast: "vf & (e | e2) & up & tr & lid"
+          translation: "tg & tr & lid & (e | e2) & w & up"
+          translation_big: "hm & tr & lid & (e | e2)"
+          image:      "img & tr & lid & (e | e2)"
+          image_edit: "ie & tr & lid"

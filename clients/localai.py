@@ -137,6 +137,21 @@ class LocalAI:
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
             return r.read(), {k: v for k, v in r.headers.items() if k.lower().startswith("x-edit")}
 
+    # ---------- rozpoznání jazyka audio stopy ----------
+    def detect_language(self, clips: list[str | Path]) -> dict:
+        """Jazyk audio stopy z 1–N klipů (ideálně ~30 s z různých míst filmu). Vrací dict: language, iso639_1,
+        iso639_2 (Matroska, např. "cze"), confidence, uncertain + reason, probabilities, samples."""
+        boundary = uuid.uuid4().hex
+        parts = []
+        for c in map(Path, clips):
+            parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{c.name}"\r\n'
+                         f"Content-Type: application/octet-stream\r\n\r\n".encode() + c.read_bytes() + b"\r\n")
+        parts.append(f"--{boundary}--\r\n".encode())
+        req = urllib.request.Request(self.url + "/upstream/langid/detect", b"".join(parts),
+                                     {"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return json.load(r)
+
     # ---------- upscale obálek ----------
     def upscale(self, path: str | Path, model: str = "siax", width: int | None = None,
                 fmt: str | None = None) -> tuple[bytes, dict]:

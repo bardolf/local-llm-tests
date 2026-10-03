@@ -26,6 +26,7 @@ Request na jiný model, který se do VRAM nevejde spolu s ním, ho vystřídá.
 | `translategemma` | | TranslateGemma 4B – rychlejší/menší překlad | 10 min |
 | `z-image` | `image` | generování obrázků Z-Image-Turbo (`/v1/images/generations`), ~65 s/1024² | 5 min |
 | `image-edit` | | úprava obrázku podle instrukce (FLUX.2-klein), `/upstream/image-edit/edit`, běží sám | 5 min |
+| `langid` | | rozpoznání jazyka audio stopy (CPU služba, volá whisper) – `/upstream/langid/detect` | 15 min |
 | `upscale` | | upscale obálek, HTTP služba `services/upscale/server.py` – volat `/upstream/upscale/upscale` | 5 min |
 
 ## Co může běžet současně (matrix router)
