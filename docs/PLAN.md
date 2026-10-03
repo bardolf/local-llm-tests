@@ -65,9 +65,9 @@ audioknihy. Další krok: reálná data z NASu.
 
 - [ ] **covers – dokončit kontrolu obálek** (domluveno 2026-10-02):
   1. ✅ chyby opraveny (2026-10-02, 0 chyb, 644 podezřelých),
-  2. `jobs/covers/describe_covers.py --model vision --only-suspect` → Qwen 9B nad 644 podezřelými (~4.3 h, přes noc),
+  2. ✅ Qwen 9B nad 644 podezřelými hotovo (2026-10-02): 616 potvrzeno, 28 v pořádku, 0 chyb,
      hlavně ověřit kategorii „nesedí autor“ (128 – podezření na plané poplachy),
-  3. commit `desktop/data/covers.jsonl`, server pak zpracuje (kontaktní list podezřelých, oprava obálek).
+  3. ✅ commit `desktop/data/covers.jsonl` → **na řadě server**: kontaktní list podezřelých, oprava obálek.
 - [x] překlad EN → CS: služba `translate` (Hunyuan-MT výchozí), 2026-10-02.
 - [x] generování obrázků: Z-Image-Turbo přes stable-diffusion.cpp, model `image` (2026-10-02).
   Další krok (nápad): náhradní ilustrace pro knihy bez obálky / s fotkou autora (covers.jsonl), nápis vsadit dodatečně.
