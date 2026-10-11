@@ -92,7 +92,7 @@ databáze (např. databazeknih), LLM jen na párování.
 
 → chat servery mají `-np 4` (gemma4b/qwen4b c=32768 → 8k na slot, qwen9b c=16384 → 4k na slot).
 VRAM s -np 4: qwen9b + bge-m3 = 6.95 GB, gemma4b + bge-m3 + whisper = 5.83 GB (baseline 1.22).
-Whisper paralelně nepomáhá (viz jobs/intro-outro/README.md).
+Whisper paralelně nepomáhá (viz audiobooksprocessing: desktop/jobs/intro-outro/README.md).
 
 ### Pozor na reasoning
 

@@ -15,7 +15,7 @@ sendLoadingState: false  # neposílat "loading…" do reasoning pole – skripty
 globalTTL: 600
 
 macros:
-  svc: "${env.HOME}/projects/audiobooksprocessing/desktop/services"
+  svc: "${env.HOME}/projects/local-llm-tests/services"
 
 models:
   # ---------- chat ----------

@@ -1,20 +1,20 @@
-# Desktop – lokální AI služby na GPU
+# local-llm-tests – lokální AI služby na GPU
 
 `ssh milan@192.168.1.10` (hostname **desktopium**, Fedora 44/sway, **Radeon RX 6600 XT 8 GB**, 24 vláken,
 46 GB RAM). Bývá uspaný – probudit přes desktop-on-off.
 
-Malé lokální modely jako podpora pro audioknihovnu: přepis řeči, úklid metadat přes LLM,
-embeddingy, zvětšení obálek, dělení na kapitoly, otisky nahrávek. Všechno přes **Vulkan**
-(Mesa RADV), ROCm není potřeba.
+Malé lokální modely jako sdílená služba pro další projekty: přepis řeči, chat/extrakce přes LLM,
+embeddingy, překlad, vision, generování a zvětšení obrázků, TTS, VAD, otisky nahrávek. Všechno přes **Vulkan**
+(Mesa RADV), ROCm není potřeba. Vzniklo jako `desktop/` v [audiobooksprocessing](https://github.com/bardolf/audiobooksprocessing)
+(odtud historie gitu), 2026-10-11 vyčleněno do samostatného repa.
 
-Na desktopu je tohle repo naklonované v **`~/projects/audiobooksprocessing`** a projekt běží přímo
-z jeho `desktop/` (služba, config, příkazy ze serveru – vše s cestou `~/projects/audiobooksprocessing/desktop`).
-Mimo git (`.gitignore`) jsou buildy `engines/` (~17 GB vč. PyTorch ROCm), modely `models/` (~17 GB)
-a výstupy `data/`; postavit znovu: `docs/SETUP.md`. Před prací `git pull` (do repa commituje i server session).
+Repo: `git@github.com:bardolf/local-llm-tests.git`, na desktopu **`~/projects/local-llm-tests`** a projekt běží přímo
+odtud (služba, config, příkazy ze serveru). Mimo git (`.gitignore`) jsou buildy `engines/` (~33 GB vč. PyTorch ROCm),
+modely `models/` (~40 GB) a výstupy `data/`; postavit znovu: `docs/SETUP.md`.
 
-Dřív se projekt jmenoval `~/projects/llm`; to je teď jen dočasný symlink pro zpětnou kompatibilitu a
-počítá se s jeho smazáním. Venv `engines/torch-sr` má ve skriptech (`bin/pip`…) starou cestu → volat
-přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
+Venvy `engines/torch-sr` a `engines/tts` mají ve skriptech (`bin/pip`, `activate`…) staré absolutní cesty
+(`~/projects/llm`, `~/projects/audiobooksprocessing/desktop`) → volat přes `engines/<venv>/bin/python -m pip`,
+`bin/python` funguje odkudkoli.
 
 ## Co je k dispozici
 
@@ -50,7 +50,7 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
 ```
 
 - `language=auto` pro neznámý jazyk (slovenské knihy); `prompt` = nápověda jmen, výrazně zlepší přepis jmen.
-- Posílat krátké klipy (např. `server/import/clips.py`), ne celé knihy. Formát libovolný (server převádí ffmpegem).
+- Posílat krátké klipy (např. `server/import/clips.py` v audiobooksprocessing), ne celé knihy. Formát libovolný (server převádí ffmpegem).
 - Chat: `POST /v1/chat/completions` s `model=chat` (Gemma 4, rychlý) / `chat-big` (Qwen3.5 9B, přesnější extrakce),
   JSON výstup přes `response_format: {"type":"json_schema",…}`. Embeddingy: `POST /v1/embeddings`, `model=embed`.
 - **Upscale obálek:** `POST /upstream/upscale/upscale`, multipart `file` (jpg/png), volitelně `model`
@@ -90,7 +90,7 @@ curl -s http://192.168.1.10:8100/v1/audio/transcriptions \
 - První požadavek po pauze o 1–2 s pomalejší (načtení modelu); nečinné modely se po 10–15 min uvolní.
 
 ```bash
-cd ~/projects/audiobooksprocessing/desktop
+cd ~/projects/local-llm-tests
 bin/ai status                      # co běží, kolik VRAM
 bin/ai chat "Kdo napsal Babičku?"  # jednorázový dotaz (gemma4b)
 bin/ai talk                        # konverzace s historií (chat-long: Gemma, 64k kontext); /reset /model /save
@@ -102,35 +102,12 @@ bench/smoke.sh                     # test všeho
 
 Klient pro skripty: [clients/localai.py](clients/localai.py) (jen standardní knihovna Pythonu).
 
-## Knihovna
+## Kdo služby používá
 
-CIFS z NASu: **`/media/disks/disk3/audio/spoken`** (= serverové `/media/disk3/audio/spoken`), autofs,
-uid/gid milan. Úlohy z ní **jen čtou**.
-
-## Úloha intro-outro
-
-[`jobs/intro-outro/`](jobs/intro-outro/) – pro každou knihu (adresář s audiem, CD1/CD2 sloučeny) VAD najde
-první/poslední řeč (přeskočí hudbu), přepíše ~60 s začátku a konce (jazyk auto, nápověda „Autor, Název“),
-přidá ID3 tagy 1. souboru (`probe_first`), odfiltruje halucinace, označí `suspect`.
-
-- Výstup na desktopu `desktop/data/intro-outro.jsonl` (průběžně) a `intro-outro.json` (na konci běhu
-  / po Ctrl+C). Klíč `book` = cesta relativně ke kořeni knihovny. Formát: `jobs/intro-outro/README.md`.
-- Navazuje (hotové přeskočí, chybné zkusí znovu). ~5 s/kniha ve 2 vláknech; 2254 knih ≈ 3–4 h.
-  **Běh celé knihovny spuštěn 2026-10-01.**
-- **`desktop/data/intro-outro.jsonl` je v gitu** (jediný soubor z `data/`, viz `.gitignore`) → na serveru stačí
-  `git pull`. `intro-outro.json` lze kdykoli vygenerovat `transcribe_intro_outro.py --export-only`.
-  Alternativně `./sync.sh` → `../data/transcripts/` (bez gitu, přímo z desktopu).
-
-### Nové knihy – přepis je potřeba VYTVOŘIT
-
-Hromadný běh pokrývá jen knihy, které už v knihovně jsou. Pro nové knihy (import):
-1. zdroje importu dávat na NAS do `/media/disk3/audio/_import/` (mimo `spoken` → ABS je nevidí; desktop:
-   `/media/disks/disk3/audio/_import/`),
-2. spouštět ze serveru (volba `--library` už existuje):
-   `ssh milan@192.168.1.10 'cd ~/projects/audiobooksprocessing/desktop && jobs/intro-outro/transcribe_intro_outro.py --library /media/disks/disk3/audio/_import "Kniha" --out data/import.jsonl'`
-   a výsledek stáhnout `scp` (`data/import.json`).
-
-Nouzově (desktop nedostupný): `server/import/clips.py` + lokální faster-whisper na CPU (docs/IMPORT_POSTUP.md §4).
+- **[audiobooksprocessing](https://github.com/bardolf/audiobooksprocessing)** – import a údržba audioknihovny.
+  Úlohy nad knihovnou (přepis úvodů/závěrů `jobs/intro-outro`, kontrola obálek `jobs/covers`) a jejich výsledky
+  jsou tam ve složce `desktop/` (na desktopu `~/projects/audiobooksprocessing/desktop`), server volá API přes
+  `server/import/` (vlastní kopie `clients/localai.py`).
 
 ## Dokumentace
 

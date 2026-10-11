@@ -142,3 +142,9 @@
 - **langid:** služba rozpoznání jazyka audio stopy (filmy) – VAD + Whisper (language_probabilities, vážený průměr přes úseky) + cs/sk dorovnání podle písmen; ISO 639-1/2 (Matroska „cze“). Test: cs/sk/en/de správně (0.96–1.0), hudba → bez řeči, směs cs+en → nejisté. Ověřeno z NASu. Na audioknihách Whisper vs. písmena: 3 rozpory z 4 200 úseků.
 - **Linger zapnut** (`sudo loginctl enable-linger milan`): orchestrátor běží od bootu i bez přihlášení (SDDM bez autologinu). Nečinný: ~0 % CPU, 83 MB RAM, 0 VRAM.
 - **TTS (2026-10-08):** XTTS v2 přes `coqui-tts` 0.27.5, venv `engines/tts` (torch rocm7.2 na GPU), model `models/tts` 1.8 GB, skript `services/tts/say.py`. Alternativa Chatterbox-TTS-Czech (Thomcles) je gated na HF, nezkoušena. Instalace: `transformers<5`, `torchcodec`. Test: technická věta „vzrušeným tónem se vzdechy“ (citoslovce Mmm/Ach + výpustky, speed 0.88) + verze s hantecem, 4 ženské hlasy → `data/tts/`. Whisper přepis zpět sedí, nejčistší Claribel Dervla a Sofia Hellen; „vyfukujeme“ občas zní jako „vyvkujeme“. ~50–90 s výpočtu na 16–30 s zvuku.
+- **2026-10-11 – samostatné repo `local-llm-tests`:** projekt vyčleněn z `audiobooksprocessing/desktop/` (historie převzata
+  `git filter-branch --subdirectory-filter desktop`), protože služby budou používat i další projekty.
+  Nové místo `~/projects/local-llm-tests`, remote `git@github.com:bardolf/local-llm-tests.git`. `engines/`, `models/`,
+  `data/tts` přesunuty mv; systemd unit + `config.yaml` (`svc:`) na novou cestu, `orchestrator/install.sh` znovu.
+  Smoke 10/10 OK, venvy tts i torch-sr (GPU) fungují. Úlohy nad audioknihovnou (`jobs/intro-outro`, `jobs/covers`),
+  jejich výsledky (`data/*.jsonl`) a `sync.sh` zůstaly v audiobooksprocessing (`desktop/`, s kopií `clients/localai.py`).

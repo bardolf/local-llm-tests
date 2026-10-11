@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+*.log
+# buildy enginů, modely (desítky GB) a výstupy – jen lokálně, postavit podle docs/SETUP.md
+engines/
+models/
+data/
