@@ -29,6 +29,7 @@ přes `engines/torch-sr/bin/python -m pip`, `bin/python` funguje odkudkoli.
 | **image** | Z-Image-Turbo (stable-diffusion.cpp) | generování obrázků, ~65 s / 1024² | [services/image](services/image/) |
 | **image-edit** | FLUX.2-klein 4B | úprava fotky podle instrukce (komiks, akvarel…), ~50 s | [services/image](services/image/) |
 | **langid** | Whisper + VAD (služba) | jazyk audio stopy filmu (ISO 639-1/2, jistota) | [services/langid](services/langid/) |
+| **tts** | XTTS v2 (skript, mimo orchestrátor) | namluvení textu česky, vestavěné hlasy / klon hlasu | [services/tts](services/tts/) |
 | **vision** | Qwen3.5 9B / Gemma 4 E4B + mmproj | popis a čtení textu z obrázku (kontrola obálek) | [services/chat](services/chat/) |
 | **upscale** | Siax (rychlý) / ATD (drobné písmo) + další | zvětšení malých obálek, HTTP i CLI | [services/upscale](services/upscale/) |
 | vad | Silero VAD (CPU) | hranice kapitol podle ticha | [services/vad](services/vad/) |
